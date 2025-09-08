@@ -12,3 +12,6 @@ wheels/
 
 # Backend specific
 backend/.venv/
+
+backend/__pycache__/
+backend/*.py[oc]
