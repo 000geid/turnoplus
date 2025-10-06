@@ -4,7 +4,11 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator
+
+
+load_dotenv()
 
 
 class DatabaseSettings(BaseModel):

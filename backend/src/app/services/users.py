@@ -1,84 +1,98 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Optional
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.models.enums import UserRole
+from app.models.user import User as UserModel
 from app.schemas.user import User, UserCreate, UserUpdate
+from app.utils.security import hash_password, verify_password
 
 
 class UsersService:
-    """In-memory user service with very small mock dataset."""
+    """Service layer wrapping persistence logic for users."""
 
-    def __init__(self) -> None:
-        self._users: List[User] = [
-            User(
-                id=1,
-                email="user1@example.com",
-                password="***",
-                is_active=True,
-                is_superuser=False,
-                full_name="User One",
-            )
-        ]
-        self._credentials: Dict[int, str] = {1: "user1pass"}
+    def __init__(self, session: Session) -> None:
+        self._session = session
 
-    def _copy(self, user: User) -> User:
-        return user.model_copy()
-
-    def _find_by_id(self, user_id: int) -> Optional[User]:
-        return next((user for user in self._users if user.id == user_id), None)
-
-    def _find_by_email(self, email: str) -> Optional[User]:
-        return next((user for user in self._users if user.email == email), None)
-
+    # ------------------------------------------------------------------
+    # Query methods
     def list(self) -> list[User]:
-        return [self._copy(user) for user in self._users]
+        users = self._session.scalars(select(UserModel)).all()
+        return [self._to_schema(user) for user in users]
 
-    def get(self, user_id: int) -> User | None:
-        user = self._find_by_id(user_id)
-        return self._copy(user) if user else None
+    def get(self, user_id: int) -> Optional[User]:
+        model = self._session.get(UserModel, user_id)
+        return self._to_schema(model) if model else None
 
-    def create(self, data: UserCreate) -> User:
-        payload = data.model_dump()
-        password = payload.pop("password")
-        new_id = max((user.id for user in self._users), default=0) + 1
-        user = User(id=new_id, password="***", **payload)
-        self._users.append(user)
-        self._credentials[new_id] = password
-        return self._copy(user)
+    # ------------------------------------------------------------------
+    # Command methods
+    def create(self, data: UserCreate, *, role: Optional[UserRole] = None) -> User:
+        model = UserModel(
+            email=data.email,
+            password_hash=hash_password(data.password),
+            is_active=data.is_active,
+            is_superuser=data.is_superuser,
+            full_name=data.full_name,
+            role=role or (UserRole.ADMIN if data.is_superuser else UserRole.STAFF),
+        )
+        self._session.add(model)
+        try:
+            self._session.flush()
+        except IntegrityError as exc:  # pragma: no cover - relies on DB constraint
+            self._session.rollback()
+            raise ValueError("Email already in use") from exc
+        return self._to_schema(model)
 
-    def update(self, user_id: int, data: UserUpdate) -> User | None:
-        user = self._find_by_id(user_id)
-        if not user:
+    def update(self, user_id: int, data: UserUpdate) -> Optional[User]:
+        model = self._session.get(UserModel, user_id)
+        if not model:
             return None
 
-        update_payload = data.model_dump(exclude_unset=True)
+        payload = data.model_dump(exclude_unset=True)
+        password = payload.pop("password", None)
+        if password:
+            model.password_hash = hash_password(password)
 
-        if "password" in update_payload:
-            new_password = update_payload.pop("password")
-            self._credentials[user_id] = new_password
+        for field, value in payload.items():
+            if hasattr(model, field):
+                setattr(model, field, value)
 
-        updated_user = user.model_copy(update=update_payload)
-        for idx, existing in enumerate(self._users):
-            if existing.id == user_id:
-                self._users[idx] = updated_user
-                break
-        return self._copy(updated_user)
+        self._session.flush()
+        return self._to_schema(model)
 
     def delete(self, user_id: int) -> bool:
-        for idx, user in enumerate(self._users):
-            if user.id == user_id:
-                del self._users[idx]
-                self._credentials.pop(user_id, None)
-                return True
-        return False
+        model = self._session.get(UserModel, user_id)
+        if not model:
+            return False
+        self._session.delete(model)
+        self._session.flush()
+        return True
 
-    def authenticate(self, email: str, password: str) -> tuple[User, str] | None:
-        user = self._find_by_email(email)
-        if not user:
+    # ------------------------------------------------------------------
+    def authenticate(self, email: str, password: str) -> Optional[UserModel]:
+        model = self._session.scalar(
+            select(UserModel).where(UserModel.email == email)
+        )
+        if not model or not model.is_active:
             return None
-
-        stored_password = self._credentials.get(user.id)
-        if stored_password != password or not user.is_active:
+        if not verify_password(password, model.password_hash):
             return None
+        return model
 
-        return self._copy(user), f"user-token-{user.id}"
+    # ------------------------------------------------------------------
+    def _to_schema(self, model: UserModel) -> User:
+        return User(
+            id=model.id,
+            email=model.email,
+            password="***",
+            is_active=model.is_active,
+            is_superuser=model.is_superuser,
+            full_name=model.full_name,
+        )
+
+
+__all__ = ["UsersService"]

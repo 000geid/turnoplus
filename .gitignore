@@ -15,7 +15,11 @@ backend/.venv/
 
 backend/__pycache__/
 backend/*.py[oc]
+backend/.env
+backend/.env.local
 .specify/
 .claude/
-
+backend/.env
+CLAUDE.MD
 out/
+CLAUDE.md

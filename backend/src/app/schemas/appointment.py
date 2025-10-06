@@ -1,17 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field, PositiveInt
 
-
-class AppointmentStatus(str, Enum):
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    CANCELED = "canceled"
-    COMPLETED = "completed"
+from app.models.enums import AppointmentStatus
 
 
 class AppointmentBase(BaseModel):
