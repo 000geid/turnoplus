@@ -4,9 +4,11 @@ from app.controllers.admins import (
     create_admin,
     delete_admin,
     get_admin,
+    login_admin,
     list_admins,
     update_admin,
 )
+from app.schemas.auth import AdminLoginResponse, LoginRequest
 from app.schemas.user import Admin, AdminCreate, AdminUpdate
 
 
@@ -24,6 +26,14 @@ def route_get_admin(admin_id: int):
     if not data:
         raise HTTPException(status_code=404, detail="Admin not found")
     return data
+
+
+@router.post("/login", response_model=AdminLoginResponse)
+def route_login_admin(data: LoginRequest):
+    response = login_admin(data)
+    if not response:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    return response
 
 
 @router.post("/", response_model=Admin, status_code=201)
@@ -44,4 +54,3 @@ def route_delete_admin(admin_id: int):
     ok = delete_admin(admin_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Admin not found")
-

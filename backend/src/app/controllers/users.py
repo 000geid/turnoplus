@@ -1,3 +1,4 @@
+from app.schemas.auth import LoginRequest, UserLoginResponse
 from app.schemas.user import User, UserCreate, UserUpdate
 from app.services.users import UsersService
 
@@ -24,3 +25,11 @@ def update_user(user_id: int, data: UserUpdate) -> User | None:
 def delete_user(user_id: int) -> bool:
     return svc.delete(user_id)
 
+
+def login_user(data: LoginRequest) -> UserLoginResponse | None:
+    result = svc.authenticate(data.email, data.password)
+    if not result:
+        return None
+
+    user, token = result
+    return UserLoginResponse(access_token=token, user=user)
