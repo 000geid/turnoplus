@@ -1,87 +1,143 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from contextlib import contextmanager
+from typing import Iterator
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, joinedload
+
+from app.db.broker import DBBroker, get_dbbroker
+from app.models.doctor import Doctor as DoctorModel
+from app.models.enums import UserRole
+from app.models.user import User as UserModel
 from app.schemas.user import Doctor, DoctorCreate, DoctorUpdate
+from app.utils.security import hash_password, verify_password
 
 
 class DoctorsService:
-    """In-memory doctor service with mock dataset."""
+    """Service layer backed by the relational database for doctor profiles."""
 
-    def __init__(self) -> None:
-        self._doctors: List[Doctor] = [
-            Doctor(
-                id=1,
-                email="doctor1@example.com",
-                password="***",
-                is_active=True,
-                is_superuser=False,
-                full_name="Doctor One",
-                specialty="Cardiology",
-                license_number="LIC-123",
-                years_experience=10,
-            )
-        ]
-        self._credentials: Dict[int, str] = {1: "doctor1pass"}
+    def __init__(self, session: Session | None = None, *, broker: DBBroker | None = None) -> None:
+        self._session = session
+        self._broker = broker
 
-    def _copy(self, doctor: Doctor) -> Doctor:
-        return doctor.model_copy()
-
-    def _find_by_id(self, doctor_id: int) -> Optional[Doctor]:
-        return next((doctor for doctor in self._doctors if doctor.id == doctor_id), None)
-
-    def _find_by_email(self, email: str) -> Optional[Doctor]:
-        return next((doctor for doctor in self._doctors if doctor.email == email), None)
-
+    # ------------------------------------------------------------------
+    # Public API
     def list(self) -> list[Doctor]:
-        return [self._copy(doctor) for doctor in self._doctors]
+        with self._session_scope() as session:
+            stmt = select(DoctorModel).options(joinedload(DoctorModel.user))
+            doctors = session.scalars(stmt).all()
+            return [self._to_schema(model) for model in doctors if model.user]
 
     def get(self, doctor_id: int) -> Doctor | None:
-        doctor = self._find_by_id(doctor_id)
-        return self._copy(doctor) if doctor else None
+        with self._session_scope() as session:
+            model = session.get(DoctorModel, doctor_id)
+            if not model or not model.user:
+                return None
+            return self._to_schema(model)
 
     def create(self, data: DoctorCreate) -> Doctor:
         payload = data.model_dump()
         password = payload.pop("password")
-        new_id = max((doctor.id for doctor in self._doctors), default=0) + 1
-        doctor = Doctor(id=new_id, password="***", **payload)
-        self._doctors.append(doctor)
-        self._credentials[new_id] = password
-        return self._copy(doctor)
+
+        user = UserModel(
+            email=payload.pop("email"),
+            password_hash=hash_password(password),
+            is_active=payload.pop("is_active", True),
+            is_superuser=payload.pop("is_superuser", False),
+            full_name=payload.pop("full_name", None),
+            role=UserRole.DOCTOR,
+        )
+        doctor = DoctorModel(**payload)
+        user.doctor_profile = doctor
+
+        with self._session_scope() as session:
+            session.add(user)
+            try:
+                session.flush()
+            except IntegrityError as exc:  # pragma: no cover - relies on DB constraint
+                session.rollback()
+                raise ValueError("Doctor could not be created (duplicate data)") from exc
+            return self._to_schema(doctor)
 
     def update(self, doctor_id: int, data: DoctorUpdate) -> Doctor | None:
-        doctor = self._find_by_id(doctor_id)
-        if not doctor:
-            return None
+        changes = data.model_dump(exclude_unset=True)
+        with self._session_scope() as session:
+            doctor = session.get(DoctorModel, doctor_id)
+            if not doctor or not doctor.user:
+                return None
 
-        update_payload = data.model_dump(exclude_unset=True)
+            user = doctor.user
 
-        if "password" in update_payload:
-            new_password = update_payload.pop("password")
-            self._credentials[doctor_id] = new_password
+            password = changes.pop("password", None)
+            if password:
+                user.password_hash = hash_password(password)
 
-        updated_doctor = doctor.model_copy(update=update_payload)
-        for idx, existing in enumerate(self._doctors):
-            if existing.id == doctor_id:
-                self._doctors[idx] = updated_doctor
-                break
-        return self._copy(updated_doctor)
+            for field in ("email", "is_active", "is_superuser", "full_name"):
+                if field in changes and hasattr(user, field):
+                    setattr(user, field, changes.pop(field))
+
+            for field, value in changes.items():
+                if hasattr(doctor, field):
+                    setattr(doctor, field, value)
+
+            session.flush()
+            return self._to_schema(doctor)
 
     def delete(self, doctor_id: int) -> bool:
-        for idx, doctor in enumerate(self._doctors):
-            if doctor.id == doctor_id:
-                del self._doctors[idx]
-                self._credentials.pop(doctor_id, None)
-                return True
-        return False
+        with self._session_scope() as session:
+            doctor = session.get(DoctorModel, doctor_id)
+            if not doctor:
+                return False
+
+            user = doctor.user
+            session.delete(doctor)
+            if user:
+                session.delete(user)
+            session.flush()
+            return True
 
     def authenticate(self, email: str, password: str) -> tuple[Doctor, str] | None:
-        doctor = self._find_by_email(email)
-        if not doctor:
-            return None
+        with self._session_scope() as session:
+            stmt = (
+                select(DoctorModel)
+                .join(DoctorModel.user)
+                .options(joinedload(DoctorModel.user))
+                .where(UserModel.email == email)
+            )
+            doctor = session.scalars(stmt).first()
+            if not doctor or not doctor.user or not doctor.user.is_active:
+                return None
 
-        stored_password = self._credentials.get(doctor.id)
-        if stored_password != password or not doctor.is_active:
-            return None
+            if not verify_password(password, doctor.user.password_hash):
+                return None
 
-        return self._copy(doctor), f"doctor-token-{doctor.id}"
+            return self._to_schema(doctor), f"doctor-token-{doctor.user.id}"
+
+    # ------------------------------------------------------------------
+    @contextmanager
+    def _session_scope(self) -> Iterator[Session]:
+        if self._session is not None:
+            yield self._session
+        else:
+            broker = self._broker or get_dbbroker()
+            with broker.session() as session:
+                yield session
+
+    @staticmethod
+    def _to_schema(model: DoctorModel) -> Doctor:
+        user = model.user
+        if not user:
+            raise ValueError("Doctor is missing related user data")
+        return Doctor(
+            id=user.id,
+            email=user.email,
+            password="***",
+            is_active=user.is_active,
+            is_superuser=user.is_superuser,
+            full_name=user.full_name,
+            specialty=model.specialty,
+            license_number=model.license_number,
+            years_experience=model.years_experience,
+        )

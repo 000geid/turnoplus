@@ -1,86 +1,147 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from contextlib import contextmanager
+from typing import Iterator
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, joinedload
+
+from app.db.broker import DBBroker, get_dbbroker
+from app.models.admin import Admin as AdminModel
+from app.models.enums import UserRole
+from app.models.user import User as UserModel
 from app.schemas.user import Admin, AdminCreate, AdminUpdate
+from app.utils.security import hash_password, verify_password
 
 
 class AdminsService:
-    """In-memory admin service with mock dataset."""
+    """Service layer backed by the relational database for administrators."""
 
-    def __init__(self) -> None:
-        self._admins: List[Admin] = [
-            Admin(
-                id=1,
-                email="admin1@example.com",
-                password="***",
-                is_active=True,
-                is_superuser=True,
-                full_name="Admin One",
-                role="superadmin",
-                permissions={"all"},
-            )
-        ]
-        self._credentials: Dict[int, str] = {1: "admin1pass"}
+    def __init__(self, session: Session | None = None, *, broker: DBBroker | None = None) -> None:
+        self._session = session
+        self._broker = broker
 
-    def _copy(self, admin: Admin) -> Admin:
-        return admin.model_copy()
-
-    def _find_by_id(self, admin_id: int) -> Optional[Admin]:
-        return next((admin for admin in self._admins if admin.id == admin_id), None)
-
-    def _find_by_email(self, email: str) -> Optional[Admin]:
-        return next((admin for admin in self._admins if admin.email == email), None)
-
+    # ------------------------------------------------------------------
     def list(self) -> list[Admin]:
-        return [self._copy(admin) for admin in self._admins]
+        with self._session_scope() as session:
+            stmt = select(AdminModel).options(joinedload(AdminModel.user))
+            admins = session.scalars(stmt).all()
+            return [self._to_schema(model) for model in admins if model.user]
 
     def get(self, admin_id: int) -> Admin | None:
-        admin = self._find_by_id(admin_id)
-        return self._copy(admin) if admin else None
+        with self._session_scope() as session:
+            model = session.get(AdminModel, admin_id)
+            if not model or not model.user:
+                return None
+            return self._to_schema(model)
 
     def create(self, data: AdminCreate) -> Admin:
         payload = data.model_dump()
         password = payload.pop("password")
-        new_id = max((admin.id for admin in self._admins), default=0) + 1
-        admin = Admin(id=new_id, password="***", **payload)
-        self._admins.append(admin)
-        self._credentials[new_id] = password
-        return self._copy(admin)
+        permissions = payload.pop("permissions", set())
+
+        user = UserModel(
+            email=payload.pop("email"),
+            password_hash=hash_password(password),
+            is_active=payload.pop("is_active", True),
+            is_superuser=payload.pop("is_superuser", False),
+            full_name=payload.pop("full_name", None),
+            role=UserRole.ADMIN,
+        )
+        admin = AdminModel(**payload, permissions=sorted(permissions))
+        user.admin_profile = admin
+
+        with self._session_scope() as session:
+            session.add(user)
+            try:
+                session.flush()
+            except IntegrityError as exc:  # pragma: no cover - relies on DB constraint
+                session.rollback()
+                raise ValueError("Admin could not be created (duplicate data)") from exc
+            return self._to_schema(admin)
 
     def update(self, admin_id: int, data: AdminUpdate) -> Admin | None:
-        admin = self._find_by_id(admin_id)
-        if not admin:
-            return None
+        changes = data.model_dump(exclude_unset=True)
+        with self._session_scope() as session:
+            admin = session.get(AdminModel, admin_id)
+            if not admin or not admin.user:
+                return None
 
-        update_payload = data.model_dump(exclude_unset=True)
+            user = admin.user
 
-        if "password" in update_payload:
-            new_password = update_payload.pop("password")
-            self._credentials[admin_id] = new_password
+            password = changes.pop("password", None)
+            if password:
+                user.password_hash = hash_password(password)
 
-        updated_admin = admin.model_copy(update=update_payload)
-        for idx, existing in enumerate(self._admins):
-            if existing.id == admin_id:
-                self._admins[idx] = updated_admin
-                break
-        return self._copy(updated_admin)
+            permissions = changes.pop("permissions", None)
+
+            for field in ("email", "is_active", "is_superuser", "full_name"):
+                if field in changes and hasattr(user, field):
+                    setattr(user, field, changes.pop(field))
+
+            for field, value in changes.items():
+                if hasattr(admin, field):
+                    setattr(admin, field, value)
+
+            if permissions is not None:
+                admin.permissions = sorted(permissions)
+
+            session.flush()
+            return self._to_schema(admin)
 
     def delete(self, admin_id: int) -> bool:
-        for idx, admin in enumerate(self._admins):
-            if admin.id == admin_id:
-                del self._admins[idx]
-                self._credentials.pop(admin_id, None)
-                return True
-        return False
+        with self._session_scope() as session:
+            admin = session.get(AdminModel, admin_id)
+            if not admin:
+                return False
+
+            user = admin.user
+            session.delete(admin)
+            if user:
+                session.delete(user)
+            session.flush()
+            return True
 
     def authenticate(self, email: str, password: str) -> tuple[Admin, str] | None:
-        admin = self._find_by_email(email)
-        if not admin:
-            return None
+        with self._session_scope() as session:
+            stmt = (
+                select(AdminModel)
+                .join(AdminModel.user)
+                .options(joinedload(AdminModel.user))
+                .where(UserModel.email == email)
+            )
+            admin = session.scalars(stmt).first()
+            if not admin or not admin.user or not admin.user.is_active:
+                return None
 
-        stored_password = self._credentials.get(admin.id)
-        if stored_password != password or not admin.is_active:
-            return None
+            if not verify_password(password, admin.user.password_hash):
+                return None
 
-        return self._copy(admin), f"admin-token-{admin.id}"
+            return self._to_schema(admin), f"admin-token-{admin.user.id}"
+
+    # ------------------------------------------------------------------
+    @contextmanager
+    def _session_scope(self) -> Iterator[Session]:
+        if self._session is not None:
+            yield self._session
+        else:
+            broker = self._broker or get_dbbroker()
+            with broker.session() as session:
+                yield session
+
+    @staticmethod
+    def _to_schema(model: AdminModel) -> Admin:
+        user = model.user
+        if not user:
+            raise ValueError("Admin is missing related user data")
+        return Admin(
+            id=user.id,
+            email=user.email,
+            password="***",
+            is_active=user.is_active,
+            is_superuser=user.is_superuser,
+            full_name=user.full_name,
+            role=model.role or "support",
+            permissions=set(model.permissions or []),
+        )
