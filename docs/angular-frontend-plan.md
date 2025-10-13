@@ -102,3 +102,31 @@ frontend/
 3. Implement Auth module end-to-end against backend.
 4. Build patient workflows (profile, calendar, booking) leveraging existing APIs.
 5. Extend backend or adjust UI for offices/patient lookup gaps before completing doctor/admin panels.
+
+## Incremental Delivery Epics
+1. **Project Bootstrap & Tooling**  
+   - Scaffold Angular workspace, configure linting/formatting, add CI scripts.  
+   - Integrate global styling palette and basic layout shell with navigation and toast service.
+
+2. **Authentication Foundation**  
+   - Build shared `AuthService`, interceptors, and guards.  
+   - Implement multi-role login and patient self-registration flows with backend integration and happy-path tests.
+
+3. **Patient Experience MVP**  
+   - Profile view/edit tied to `/patients/{id}`.  
+   - Appointments list with cancel/confirm actions and booking calendar wired to availability endpoints.  
+   - Medical records read view pulling `/medical-records/patients/{id}`.
+
+4. **Doctor Operations**  
+   - Doctor dashboard with availability management (list/create/update).  
+   - Medical record editor for patient encounters, including patient lookup strategy.  
+   - Tests covering availability toggling and record persistence.
+
+5. **Admin Console & Reporting**  
+   - User and doctor management tables with CRUD actions.  
+   - Aggregated calendar view leveraging appointments data.  
+   - Office management UI pending backend support; coordinate API changes or deliver with feature flag.
+
+6. **Hardening & UX Polish**  
+   - Add comprehensive error handling, loading states, role-based routing refinements.  
+   - Implement end-to-end tests across roles, accessibility pass, and production build optimizations.
