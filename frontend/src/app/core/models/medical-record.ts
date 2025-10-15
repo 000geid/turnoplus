@@ -16,3 +16,9 @@ export interface MedicalRecordCreateRequest {
   treatment?: string | null;
   notes?: string | null;
 }
+
+export interface MedicalRecordUpdateRequest {
+  diagnosis?: string | null;
+  treatment?: string | null;
+  notes?: string | null;
+}

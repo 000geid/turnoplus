@@ -3,7 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
-import { AppointmentCreateRequest, AppointmentDto, AvailabilityDto } from '../models/appointment';
+import {
+  AppointmentCreateRequest,
+  AppointmentDto,
+  AvailabilityCreateRequest,
+  AvailabilityDto,
+  AvailabilityUpdateRequest
+} from '../models/appointment';
 
 @Injectable({ providedIn: 'root' })
 export class AppointmentsService {
@@ -11,6 +17,10 @@ export class AppointmentsService {
 
   listForPatient(patientId: number): Observable<AppointmentDto[]> {
     return this.http.get<AppointmentDto[]>(`${API_BASE_URL}/appointments/patients/${patientId}`);
+  }
+
+  listForDoctor(doctorId: number): Observable<AppointmentDto[]> {
+    return this.http.get<AppointmentDto[]>(`${API_BASE_URL}/appointments/doctors/${doctorId}`);
   }
 
   cancel(appointmentId: number): Observable<AppointmentDto> {
@@ -23,6 +33,20 @@ export class AppointmentsService {
 
   listDoctorAvailability(doctorId: number): Observable<AvailabilityDto[]> {
     return this.http.get<AvailabilityDto[]>(`${API_BASE_URL}/appointments/doctor/${doctorId}/availability`);
+  }
+
+  createAvailability(payload: AvailabilityCreateRequest): Observable<AvailabilityDto> {
+    return this.http.post<AvailabilityDto>(`${API_BASE_URL}/appointments/availability`, payload);
+  }
+
+  updateAvailability(
+    availabilityId: number,
+    payload: AvailabilityUpdateRequest
+  ): Observable<AvailabilityDto> {
+    return this.http.patch<AvailabilityDto>(
+      `${API_BASE_URL}/appointments/availability/${availabilityId}`,
+      payload
+    );
   }
 
   book(payload: AppointmentCreateRequest): Observable<AppointmentDto> {

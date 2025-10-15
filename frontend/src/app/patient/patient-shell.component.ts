@@ -6,6 +6,7 @@ import { PatientsService } from '../core/services/patients.service';
 import { AppointmentsService } from '../core/services/appointments.service';
 import { MedicalRecordsService } from '../core/services/medical-records.service';
 import { PatientDto, PatientUpdateRequest } from '../core/models/user';
+import { MedicalRecordDto } from '../core/models/medical-record';
 import { AppointmentDto } from '../core/models/appointment';
 import { PatientProfileComponent } from './components/patient-profile/patient-profile.component';
 import { PatientAppointmentsComponent } from './components/patient-appointments/patient-appointments.component';

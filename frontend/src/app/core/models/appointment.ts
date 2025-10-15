@@ -25,3 +25,16 @@ export interface AvailabilityDto {
   endAt: string;
   slots: number;
 }
+
+export interface AvailabilityCreateRequest {
+  doctor_id: number;
+  start_at: string;
+  end_at: string;
+  slots?: number;
+}
+
+export interface AvailabilityUpdateRequest {
+  start_at?: string;
+  end_at?: string;
+  slots?: number;
+}

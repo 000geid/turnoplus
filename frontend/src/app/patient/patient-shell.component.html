@@ -33,5 +33,12 @@
       [patientId]="currentUserId"
       (booked)="onAppointmentBooked($event)"
     />
+
+    <app-patient-medical-records
+      [records]="medicalRecords()"
+      [loading]="isLoadingRecords()"
+      [error]="recordsError()"
+      (refresh)="onRefreshRecords()"
+    />
   </div>
 </section>

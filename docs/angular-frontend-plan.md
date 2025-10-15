@@ -103,7 +103,7 @@ frontend/
 - [ ] Build patient workflows (profile, calendar, booking) leveraging existing APIs.
   - [x] Patient profile editor and appointments list with cancel/confirm actions.
   - [x] Availability browser and booking flow connected to `/appointments` APIs.
-  - [ ] Medical records lectura inicial.
+  - [x] Medical records lectura inicial.
 - [ ] Extend backend or adjust UI for offices/patient lookup gaps before completing doctor/admin panels.
 
 ## Incremental Delivery Epics
@@ -139,7 +139,7 @@ frontend/
 | --- | --- | --- |
 | Project Bootstrap & Tooling | ✅ Completed | Angular CLI project in `frontend/`, ESLint/Prettier wired, CI commands verified with `npm run lint` / `npm run build`. |
 | Authentication Foundation | ✅ Completed | AuthService, token interceptor, guards, and auth form specs validated with `npm test`. |
-| Patient Experience MVP | 🟡 In progress | Profile editor, booking flow, and appointments list live; medical records pending. |
+| Patient Experience MVP | 🟡 In progress | Profile editor, booking flow, and medical records view live; doctor calendar integration next. |
 | Doctor Operations | ⬜ Not started | Placeholder shell component at `frontend/src/app/doctor/doctor-shell.component.ts`. |
 | Admin Console & Reporting | ⬜ Not started | Placeholder shell component at `frontend/src/app/admin/admin-shell.component.ts`. |
 | Hardening & UX Polish | ⬜ Not started | To follow once core flows stabilize. |
@@ -150,3 +150,4 @@ frontend/
 - Core config/services: `frontend/src/app/core/config/api.config.ts`, `frontend/src/app/core/services/auth.service.ts`.
 - Patient dashboard foundation: `frontend/src/app/patient/`, `frontend/src/app/core/services/patients.service.ts`, `frontend/src/app/core/services/appointments.service.ts`.
   - Booking flow extension: `frontend/src/app/patient/components/patient-booking/`, `frontend/src/app/core/services/doctors.service.ts`.
+  - Medical records view: `frontend/src/app/core/services/medical-records.service.ts`, `frontend/src/app/patient/components/patient-medical-records/`.

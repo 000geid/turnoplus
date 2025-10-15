@@ -3,7 +3,12 @@ import { TestBed } from '@angular/core/testing';
 
 import { AppointmentsService } from './appointments.service';
 import { API_BASE_URL } from '../config/api.config';
-import { AppointmentDto, AvailabilityDto } from '../models/appointment';
+import {
+  AppointmentDto,
+  AvailabilityCreateRequest,
+  AvailabilityDto,
+  AvailabilityUpdateRequest
+} from '../models/appointment';
 
 describe('AppointmentsService', () => {
   let service: AppointmentsService;
@@ -46,6 +51,30 @@ describe('AppointmentsService', () => {
     expect(response).toEqual(payload);
   });
 
+  it('should request appointments for the given doctor', () => {
+    let response: AppointmentDto[] | undefined;
+
+    service.listForDoctor(4).subscribe((appointments) => (response = appointments));
+
+    const request = httpMock.expectOne(`${API_BASE_URL}/appointments/doctors/4`);
+    expect(request.request.method).toBe('GET');
+
+    const payload: AppointmentDto[] = [
+      {
+        id: 5,
+        doctor_id: 4,
+        patient_id: 8,
+        startAt: '2025-10-16T10:00:00Z',
+        endAt: '2025-10-16T10:30:00Z',
+        status: 'confirmed',
+        notes: 'Traer estudios'
+      }
+    ];
+
+    request.flush(payload);
+    expect(response).toEqual(payload);
+  });
+
   it('should send cancel command for an appointment', () => {
     service.cancel(3).subscribe();
 
@@ -76,6 +105,33 @@ describe('AppointmentsService', () => {
 
     request.flush(payload);
     expect(response).toEqual(payload);
+  });
+
+  it('should post to create doctor availability', () => {
+    const payload: AvailabilityCreateRequest = {
+      doctor_id: 3,
+      start_at: '2025-10-16T09:00:00Z',
+      end_at: '2025-10-16T09:30:00Z',
+      slots: 2
+    };
+
+    service.createAvailability(payload).subscribe();
+
+    const request = httpMock.expectOne(`${API_BASE_URL}/appointments/availability`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(payload);
+  });
+
+  it('should patch existing availability', () => {
+    const payload: AvailabilityUpdateRequest = {
+      slots: 3
+    };
+
+    service.updateAvailability(11, payload).subscribe();
+
+    const request = httpMock.expectOne(`${API_BASE_URL}/appointments/availability/11`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual(payload);
   });
 
   it('should post a new appointment booking', () => {
