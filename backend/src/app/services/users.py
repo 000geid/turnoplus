@@ -73,7 +73,7 @@ class UsersService:
         return True
 
     # ------------------------------------------------------------------
-    def authenticate(self, email: str, password: str) -> Optional[UserModel]:
+    def authenticate(self, email: str, password: str) -> Optional[User]:
         model = self._session.scalar(
             select(UserModel).where(UserModel.email == email)
         )
@@ -81,7 +81,7 @@ class UsersService:
             return None
         if not verify_password(password, model.password_hash):
             return None
-        return model
+        return self._to_schema(model)
 
     # ------------------------------------------------------------------
     def _to_schema(self, model: UserModel) -> User:

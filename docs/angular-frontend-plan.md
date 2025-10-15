@@ -97,11 +97,14 @@ frontend/
 - CI scripts: `npm run lint`, `npm run test`, `npm run build`.
 
 ## Next Steps
-1. Scaffold Angular workspace with CLI and baseline tooling.
-2. Port shared styles and develop core layout using mockup.
-3. Implement Auth module end-to-end against backend.
-4. Build patient workflows (profile, calendar, booking) leveraging existing APIs.
-5. Extend backend or adjust UI for offices/patient lookup gaps before completing doctor/admin panels.
+- [x] Scaffold Angular workspace with CLI and baseline tooling.
+- [x] Port shared styles and develop core layout using mockup.
+- [x] Implement Auth module end-to-end against backend *(interceptors, guards, storage + auth flow unit tests now in place)*.
+- [ ] Build patient workflows (profile, calendar, booking) leveraging existing APIs.
+  - [x] Patient profile editor and appointments list with cancel/confirm actions.
+  - [x] Availability browser and booking flow connected to `/appointments` APIs.
+  - [ ] Medical records lectura inicial.
+- [ ] Extend backend or adjust UI for offices/patient lookup gaps before completing doctor/admin panels.
 
 ## Incremental Delivery Epics
 1. **Project Bootstrap & Tooling**  
@@ -130,3 +133,20 @@ frontend/
 6. **Hardening & UX Polish**  
    - Add comprehensive error handling, loading states, role-based routing refinements.  
    - Implement end-to-end tests across roles, accessibility pass, and production build optimizations.
+
+## Progress Tracker
+| Epic | Status | Notes |
+| --- | --- | --- |
+| Project Bootstrap & Tooling | ✅ Completed | Angular CLI project in `frontend/`, ESLint/Prettier wired, CI commands verified with `npm run lint` / `npm run build`. |
+| Authentication Foundation | ✅ Completed | AuthService, token interceptor, guards, and auth form specs validated with `npm test`. |
+| Patient Experience MVP | 🟡 In progress | Profile editor, booking flow, and appointments list live; medical records pending. |
+| Doctor Operations | ⬜ Not started | Placeholder shell component at `frontend/src/app/doctor/doctor-shell.component.ts`. |
+| Admin Console & Reporting | ⬜ Not started | Placeholder shell component at `frontend/src/app/admin/admin-shell.component.ts`. |
+| Hardening & UX Polish | ⬜ Not started | To follow once core flows stabilize. |
+
+### Implemented Artifacts (Snapshot)
+- Global styling and layout scaffolding: `frontend/src/styles.scss`, `frontend/src/app/app.html`, `frontend/src/app/app.scss`.
+- Auth flows and routing: `frontend/src/app/app.routes.ts`, `frontend/src/app/auth/`.
+- Core config/services: `frontend/src/app/core/config/api.config.ts`, `frontend/src/app/core/services/auth.service.ts`.
+- Patient dashboard foundation: `frontend/src/app/patient/`, `frontend/src/app/core/services/patients.service.ts`, `frontend/src/app/core/services/appointments.service.ts`.
+  - Booking flow extension: `frontend/src/app/patient/components/patient-booking/`, `frontend/src/app/core/services/doctors.service.ts`.

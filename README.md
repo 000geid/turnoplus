@@ -14,12 +14,18 @@ uv pip install -r pyproject.toml
 
 ## Configuración de la base de datos
 
-La capa de infraestructura se centraliza en `app.db.DBbroker`. La configuración se resuelve a partir de variables de entorno:
+La capa de infraestructura se centraliza en `app.db.DBbroker`. La aplicación lee la configuración desde variables de entorno que normalmente definimos en `backend/.env` (cargado automáticamente por `python-dotenv`):
 
-- `DATABASE_URL`: URL de conexión SQLAlchemy (por defecto `mysql+pymysql://turnoplus:turnoplus@localhost:3306/turnoplus`).
+- `DATABASE_URL`: URL de conexión SQLAlchemy hacia la base externa proporcionada por el equipo (sincroniza migrations y runtime).
 - `DATABASE_ECHO`: Define si SQLAlchemy escribe SQL (`1` para habilitar).
 - `DATABASE_POOL_PRE_PING`: Controla `pool_pre_ping` (`0` para deshabilitar).
 - `ALEMBIC_INI_PATH`: Permite sobreescribir la ruta de `alembic.ini`.
+
+Ejemplo mínimo (`backend/.env`):
+
+```env
+DATABASE_URL=mysql+pymysql://usuario:password@host:3306/turnoplus
+```
 
 El broker expone:
 
