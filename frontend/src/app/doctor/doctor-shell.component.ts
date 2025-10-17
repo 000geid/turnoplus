@@ -24,11 +24,12 @@ import {
   DoctorRecordUpdateEvent,
   DoctorRecordsComponent
 } from './components/doctor-records/doctor-records.component';
+import { TabbedShellComponent, TabConfig } from '../shared/components/tabbed-shell/tabbed-shell.component';
 
 @Component({
   selector: 'app-doctor-shell',
   standalone: true,
-  imports: [NgIf, NgFor, NgClass, DatePipe, DoctorAvailabilityComponent, DoctorRecordsComponent],
+  imports: [NgIf, NgFor, NgClass, DatePipe, TabbedShellComponent, DoctorAvailabilityComponent, DoctorRecordsComponent],
   templateUrl: './doctor-shell.component.html',
   styleUrl: './doctor-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -69,6 +70,29 @@ export class DoctorShellComponent {
   );
 
   readonly doctorName = computed(() => this.doctorGreeting());
+
+  readonly tabs: TabConfig[] = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: 'dashboard'
+    },
+    {
+      id: 'availability',
+      label: 'Disponibilidad',
+      icon: 'schedule'
+    },
+    {
+      id: 'appointments',
+      label: 'Mis Turnos',
+      icon: 'event'
+    },
+    {
+      id: 'records',
+      label: 'Registros Médicos',
+      icon: 'medical_services'
+    }
+  ];
 
   constructor() {
     const currentUser = this.authService.user();

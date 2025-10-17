@@ -8,6 +8,13 @@ import { AppointmentsService } from '../../../core/services/appointments.service
 import { DoctorDto } from '../../../core/models/user';
 import { AppointmentCreateRequest, AppointmentDto, AvailabilityDto } from '../../../core/models/appointment';
 
+interface AppointmentSlot {
+  id: string;
+  startAt: Date;
+  endAt: Date;
+  availabilityId: number;
+}
+
 @Component({
   selector: 'app-patient-booking',
   standalone: true,
@@ -25,12 +32,13 @@ export class PatientBookingComponent {
   private readonly fb = new FormBuilder();
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly selectionForm = this.fb.nonNullable.group({
-    doctorId: 0
+  readonly selectionForm = this.fb.group({
+    doctorId: ['']
   });
 
   readonly doctors = signal<DoctorDto[]>([]);
   readonly availability = signal<AvailabilityDto[]>([]);
+  readonly appointmentSlots = signal<AppointmentSlot[]>([]);
   readonly isLoadingDoctors = signal<boolean>(false);
   readonly isLoadingAvailability = signal<boolean>(false);
   readonly isBooking = signal<boolean>(false);
@@ -39,15 +47,20 @@ export class PatientBookingComponent {
 
   readonly selectedDoctor = computed(() => {
     const id = this.selectionForm.controls.doctorId.value;
-    return this.doctors().find((doctor) => doctor.id === id) ?? null;
+    if (!id || id === '') return null;
+    const doctorId = parseInt(id, 10);
+    return this.doctors().find((doctor) => doctor.id === doctorId) ?? null;
   });
 
   constructor() {
     this.selectionForm.controls.doctorId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((id) => {
-        if (id) {
-          this.loadAvailability(id);
+        if (id && id !== '') {
+          const doctorId = parseInt(id, 10);
+          if (doctorId > 0) {
+            this.loadAvailability(doctorId);
+          }
         }
       });
     this.loadDoctors();
@@ -101,10 +114,6 @@ export class PatientBookingComponent {
         next: (doctors) => {
           this.doctors.set(doctors);
           this.isLoadingDoctors.set(false);
-          if (doctors.length) {
-            const first = doctors[0].id;
-            this.selectionForm.controls.doctorId.setValue(first, { emitEvent: true });
-          }
         },
         error: () => {
           this.isLoadingDoctors.set(false);

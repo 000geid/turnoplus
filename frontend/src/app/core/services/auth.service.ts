@@ -65,9 +65,11 @@ export class AuthService {
   }
 
   logout(): void {
+    console.log('AuthService logout called, user before:', this._user());
     localStorage.removeItem(this.storageTokenKey);
     localStorage.removeItem(this.storageUserKey);
     this._user.set(null);
+    console.log('AuthService logout called, user after:', this._user());
   }
 
   private persistSession(user: AuthenticatedUser): void {

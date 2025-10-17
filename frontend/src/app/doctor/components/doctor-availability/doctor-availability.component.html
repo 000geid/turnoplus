@@ -61,11 +61,11 @@
         <li class="doctor-availability__item">
           <div>
             <h4>
-              {{ slot.startAt | date: 'EEEE d MMMM' : 'UTC' }}
+              {{ slot.startAt | date: 'EEEE d MMMM' }}
             </h4>
             <p>
-              {{ slot.startAt | date: 'HH:mm' : 'UTC' }} -
-              {{ slot.endAt | date: 'HH:mm' : 'UTC' }} hs ·
+              {{ slot.startAt | date: 'HH:mm' }} -
+              {{ slot.endAt | date: 'HH:mm' }} hs ·
               {{ slot.slots }} turno{{ slot.slots > 1 ? 's' : '' }}
             </p>
           </div>

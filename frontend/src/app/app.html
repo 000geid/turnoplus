@@ -5,23 +5,80 @@
       <span class="brand__tagline">Salud conectada, turnos al instante</span>
     </div>
     <nav class="topbar__nav">
-      <a routerLink="/auth/login" class="topbar__link">Ingresar</a>
-      <a routerLink="/auth/register" class="btn btn-primary">Crear cuenta</a>
+      @if (isAuthenticated) {
+        <span class="topbar__user">Hola, {{ user()?.fullName || user()?.email }}</span>
+        <button class="btn btn-secondary" type="button" (click)="logout()">Cerrar sesión</button>
+      } @else {
+        <a routerLink="/auth/login" class="topbar__link">Ingresar</a>
+        <a routerLink="/auth/register" class="btn btn-primary">Crear cuenta</a>
+      }
     </nav>
   </div>
 </header>
 
 <main class="app-shell container">
-  <div class="app-shell__intro card">
-    <div class="app-shell__copy">
-      <h1>Gestioná tus turnos con confianza</h1>
-      <p>
-        Pacientes, profesionales y administradores comparten la misma experiencia moderna para
-        coordinar turnos, disponibilidad y fichas clínicas.
-      </p>
+  @if (!isAuthenticated) {
+    <div class="landing-layout">
+      <!-- <div class="app-shell__intro card">
+        <div class="app-shell__copy">
+          <h1>Gestioná tus turnos con confianza</h1>
+          <p>
+            Pacientes, profesionales y administradores comparten la misma experiencia moderna para
+            coordinar turnos, disponibilidad y fichas clínicas.
+          </p>
+        </div>
+      </div> -->
+      
+      <section class="auth-card card">
+        <header class="auth-card__header">
+          <h2>Ingresar a TurnoPlus</h2>
+          <p>Elegí tu rol y accedé a tu panel personalizado.</p>
+        </header>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onLoginSubmit()" novalidate class="auth-card__form">
+          <label class="field">
+            <span>Correo electrónico</span>
+            <input type="email" formControlName="email" class="input" placeholder="tu@correo.com" />
+            @if (loginForm.controls['email'].touched && loginForm.controls['email'].invalid) {
+              <small class="field__error">Ingresá un email válido.</small>
+            }
+          </label>
+
+          <label class="field">
+            <span>Contraseña</span>
+            <input type="password" formControlName="password" class="input" placeholder="••••••••" />
+            @if (loginForm.controls['password'].touched && loginForm.controls['password'].invalid) {
+              <small class="field__error">Usá al menos 6 caracteres.</small>
+            }
+          </label>
+
+          <label class="field">
+            <span>Ingresar como</span>
+            <select formControlName="role" class="input">
+              <option value="user">Paciente</option>
+              <option value="doctor">Profesional</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </label>
+
+          @if (loginError) {
+            <p class="auth-card__error">{{ loginError }}</p>
+          }
+
+          <button class="btn btn-primary auth-card__submit" type="submit" [disabled]="isLoginSubmitting">
+            {{ isLoginSubmitting ? 'Ingresando...' : 'Ingresar' }}
+          </button>
+        </form>
+
+        <footer class="auth-card__footer">
+          <span>¿Todavía no tenés cuenta?</span>
+          <a routerLink="/auth/register">Crear cuenta como paciente</a>
+        </footer>
+      </section>
     </div>
-  </div>
-  <router-outlet />
+  } @else {
+    <router-outlet />
+  }
 </main>
 
 <footer class="app-footer">

@@ -19,8 +19,9 @@
       <span>Profesional</span>
       <select class="input" formControlName="doctorId" [disabled]="isLoadingDoctors() || isBooking()">
         @if (isLoadingDoctors()) {
-          <option>Cargando profesionales…</option>
+          <option value="">Cargando profesionales…</option>
         } @else {
+          <option value="">Seleccioná un profesional</option>
           @for (doctor of doctors(); track doctor.id) {
             <option [value]="doctor.id">
               {{ doctor.full_name || doctor.email }}
@@ -43,11 +44,11 @@
         <li class="patient-booking__slot">
           <div class="patient-booking__slot-info">
             <span class="patient-booking__slot-date">
-              {{ slot.startAt | date: 'EEEE d MMMM':'UTC' }}
+              {{ slot.startAt | date: 'EEEE d MMMM' }}
             </span>
             <span class="patient-booking__slot-time">
-              {{ slot.startAt | date: 'HH:mm':'UTC' }} -
-              {{ slot.endAt | date: 'HH:mm':'UTC' }}
+              {{ slot.startAt | date: 'HH:mm' }} -
+              {{ slot.endAt | date: 'HH:mm' }}
             </span>
           </div>
           <button
