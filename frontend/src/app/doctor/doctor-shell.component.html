@@ -116,14 +116,16 @@
 
   <div slot="records">
     <app-doctor-records
+      [patients]="patients()"
       [records]="records()"
-      [loading]="isLoadingRecords()"
+      [loadingPatients]="isLoadingPatients()"
+      [loadingRecords]="isLoadingRecords()"
       [saving]="isSavingRecord()"
       [mutationId]="recordMutationId()"
-      [error]="recordsError()"
+      [error]="recordsError() || patientsError()"
       [message]="recordsMessage()"
-      (refresh)="refreshRecords()"
-      (createRecord)="onCreateRecord($event)"
+      [doctorId]="doctorId"
+      (refresh)="refreshRecords(); refreshPatients()"
       (updateRecord)="onUpdateRecord($event)"
     ></app-doctor-records>
   </div>

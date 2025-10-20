@@ -66,113 +66,6 @@
   gap: 2rem;
 }
 
-.landing-layout {
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  width: 100%;
-  max-width: 100%;
-  min-height: 60vh;
-}
-
-.landing-layout .app-shell__intro {
-  flex: 1;
-  min-width: 0;
-}
-
-.landing-layout .auth-card {
-  flex: 0 0 28rem;
-  min-width: 0;
-}
-
-.app-shell__intro {
-  padding: 2.5rem;
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 1.2rem;
-  border: 1px solid rgba(8, 38, 44, 0.08);
-  width: 100%;
-}
-
-.app-shell__copy {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.app-shell__copy h1 {
-  font-size: clamp(1.875rem, 4vw, 2.5rem);
-  color: var(--brand-900);
-  margin: 0;
-}
-
-.app-shell__copy p {
-  margin: 0;
-  color: var(--gray-600);
-  max-width: 42rem;
-  line-height: 1.6;
-}
-
-.auth-card {
-  padding: 2.5rem;
-  display: grid;
-  gap: 1.5rem;
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 1.2rem;
-  border: 1px solid rgba(8, 38, 44, 0.08);
-  width: 100%;
-}
-
-.auth-card__header h2 {
-  margin: 0;
-  color: var(--brand-900);
-  font-size: 1.75rem;
-}
-
-.auth-card__header p {
-  margin: 0.25rem 0 0;
-  color: var(--gray-600);
-}
-
-.auth-card__form {
-  display: grid;
-  gap: 1.2rem;
-}
-
-.field {
-  display: grid;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  color: var(--gray-700);
-}
-
-.field__error {
-  color: #b91c1c;
-  font-size: 0.8rem;
-}
-
-.auth-card__error {
-  margin: 0;
-  padding: 0.75rem 1rem;
-  background: rgba(185, 28, 28, 0.08);
-  border-radius: 0.75rem;
-  color: #b91c1c;
-  font-size: 0.9rem;
-}
-
-.auth-card__submit {
-  width: 100%;
-}
-
-.auth-card__footer {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--gray-600);
-}
-
-.auth-card__footer a {
-  font-weight: 600;
-}
 
 .app-footer {
   padding: 1.5rem 0;
@@ -187,22 +80,6 @@
   color: var(--gray-600);
 }
 
-@media (max-width: 1024px) {
-  .landing-layout {
-    flex-direction: column !important;
-    gap: 2rem;
-    min-height: auto;
-  }
-  
-  .landing-layout .app-shell__intro {
-    flex: none;
-  }
-  
-  .landing-layout .auth-card {
-    flex: none;
-    max-width: none;
-  }
-}
 
 @media (max-width: 640px) {
   .topbar__inner {
@@ -212,18 +89,6 @@
 
   .app-shell {
     padding-top: 2rem;
-  }
-
-  .landing-layout {
-    gap: 1.5rem;
-  }
-
-  .app-shell__intro {
-    padding: 2rem;
-  }
-
-  .auth-card {
-    padding: 2rem;
   }
 
   .app-footer__inner {

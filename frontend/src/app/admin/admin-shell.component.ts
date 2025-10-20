@@ -1,10 +1,13 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TabbedShellComponent, TabConfig } from '../shared/components/tabbed-shell/tabbed-shell.component';
+import { DoctorManagementComponent } from './components/doctor-management/doctor-management.component';
+import { OfficeManagementComponent } from './components/office-management/office-management.component';
+import { UserManagementComponent } from './components/user-management/user-management.component';
 
 @Component({
   selector: 'app-admin-shell',
   standalone: true,
-  imports: [TabbedShellComponent],
+  imports: [TabbedShellComponent, DoctorManagementComponent, OfficeManagementComponent, UserManagementComponent],
   template: `
     <app-tabbed-shell
       title="Panel del administrador"
@@ -46,17 +49,15 @@ import { TabbedShellComponent, TabConfig } from '../shared/components/tabbed-she
       </div>
 
       <div slot="users">
-        <div class="admin-section">
-          <h3>Gestión de Usuarios</h3>
-          <p class="placeholder">Funcionalidad de gestión de usuarios en desarrollo.</p>
-        </div>
+        <app-user-management></app-user-management>
       </div>
 
       <div slot="doctors">
-        <div class="admin-section">
-          <h3>Gestión de Doctores</h3>
-          <p class="placeholder">Funcionalidad de gestión de doctores en desarrollo.</p>
-        </div>
+        <app-doctor-management></app-doctor-management>
+      </div>
+
+      <div slot="offices">
+        <app-office-management></app-office-management>
       </div>
 
       <div slot="settings">
@@ -86,6 +87,11 @@ export class AdminShellComponent {
       id: 'doctors',
       label: 'Doctores',
       icon: 'medical_services'
+    },
+    {
+      id: 'offices',
+      label: 'Consultorios',
+      icon: 'business'
     },
     {
       id: 'settings',
