@@ -204,6 +204,6 @@ export class DoctorManagementComponent implements OnInit {
   getOfficeName(officeId: number | null | undefined): string {
     if (!officeId) return 'Sin asignar';
     const office = this.offices.find(o => o.id === officeId);
-    return office ? (office.name || office.code) : 'Consultorio no encontrado';
+    return office ? `${office.code} · ${office.name || 'Sin nombre'} (ID ${office.id})` : 'Consultorio no encontrado';
   }
 }

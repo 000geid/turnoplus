@@ -81,9 +81,39 @@ def route_get_available_blocks(
 ):
     """Get available appointment blocks for a doctor within a date range."""
     from datetime import datetime
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
-        start = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
-        end = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        logger.info(f"Parsing dates: start_date={start_date}, end_date={end_date}")
+        
+        # Handle different ISO format variations
+        if start_date.endswith('Z'):
+            start = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        else:
+            start = datetime.fromisoformat(start_date)
+            
+        if end_date.endswith('Z'):
+            end = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        else:
+            end = datetime.fromisoformat(end_date)
+        
+        # Ensure both datetimes have timezone info
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=datetime.timezone.utc)
+        if end.tzinfo is None:
+            end = end.replace(tzinfo=datetime.timezone.utc)
+            
+        logger.info(f"Parsed dates: start={start}, end={end}")
+        
+        # Validate date range
+        if start >= end:
+            raise HTTPException(status_code=400, detail="Start date must be before end date")
+            
         return get_available_blocks(doctor_id, start, end)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid date format") from e
+        logger.error(f"Date parsing error: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error in available blocks: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error") from e

@@ -17,7 +17,7 @@ export interface TabConfig {
   imports: [CommonModule, MatTabsModule, MatButtonModule, MatIconModule],
   template: `
     <section class="tabbed-shell">
-      <header class="tabbed-shell__header">
+      <!-- <header class="tabbed-shell__header">
         <div class="tabbed-shell__title">
           <h2>{{ title }}</h2>
           <p>{{ subtitle }}</p>
@@ -25,7 +25,7 @@ export interface TabConfig {
         <div class="tabbed-shell__actions">
           <ng-content select="[slot=actions]"></ng-content>
         </div>
-      </header>
+      </header> -->
 
       @if (errorMessage) {
         <div class="tabbed-shell__error">
@@ -70,6 +70,9 @@ export interface TabConfig {
               }
               @if (tab.id === 'doctors') {
                 <ng-content select="[slot=doctors]"></ng-content>
+              }
+              @if (tab.id === 'offices') {
+                <ng-content select="[slot=offices]"></ng-content>
               }
               @if (tab.id === 'settings') {
                 <ng-content select="[slot=settings]"></ng-content>

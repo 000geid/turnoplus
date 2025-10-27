@@ -176,7 +176,7 @@
               class="form-control">
               <option [value]="undefined">Sin asignar</option>
               <option *ngFor="let office of offices" [value]="office.id">
-                {{ office.name || office.code }}
+                {{ office.code }} · {{ office.name || 'Sin nombre' }} (ID {{ office.id }})
               </option>
             </select>
           </div>

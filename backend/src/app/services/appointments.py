@@ -92,6 +92,15 @@ class AppointmentsService:
 
     # --------- Command methods ---------
     def book(self, data: AppointmentCreate) -> Appointment:
+        # Add logging for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Booking appointment: doctor_id={data.doctor_id}, patient_id={data.patient_id}")
+        logger.info(f"Requested time range: start_at={data.start_at}, end_at={data.end_at}")
+        
+        # Validate datetime logic first
+        self._validate_datetime_range(data.start_at, data.end_at)
+        
         self._ensure_patient_exists(data.patient_id)
         self._ensure_doctor_exists(data.doctor_id)
         self._ensure_slot_available(data.doctor_id, data.start_at, data.end_at)
@@ -102,6 +111,8 @@ class AppointmentsService:
             .where(AvailabilityModel.start_at <= data.start_at)
             .where(AvailabilityModel.end_at >= data.end_at)
         ).first()
+
+        logger.info(f"Found availability: {availability.id if availability else None}")
 
         appointment = AppointmentModel(
             doctor_id=data.doctor_id,
@@ -114,6 +125,7 @@ class AppointmentsService:
         )
         self._session.add(appointment)
         self._session.flush()
+        logger.info(f"Created appointment with ID: {appointment.id}")
         return self._to_schema(appointment)
 
     def cancel(self, appointment_id: int) -> Appointment:
@@ -187,6 +199,27 @@ class AppointmentsService:
         return self._availability_to_schema(availability)
 
     # --------- Internal helpers ---------
+    def _validate_datetime_range(self, start: datetime, end: datetime) -> None:
+        """Validate that start time is before end time and both are in the future."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Validating datetime range: start={start}, end={start}")
+        
+        # Check if start is before end
+        if start >= end:
+            raise ValidationError(f"Start time ({start}) must be before end time ({end})")
+        
+        # Check if appointment is in the future (allowing for current time buffer)
+        from datetime import datetime, timedelta, timezone
+        now = datetime.now(start.tzinfo) if start.tzinfo else datetime.now(timezone.utc)
+        min_future_time = now + timedelta(minutes=30)  # Minimum 30 minutes in advance
+        
+        if start < min_future_time:
+            raise ValidationError(f"Appointment must be scheduled at least 30 minutes in advance. Start time: {start}, Current time: {now}")
+        
+        logger.info("Datetime validation passed")
+
     def _ensure_patient_exists(self, patient_id: int) -> None:
         if not self._patients.get(patient_id):
             raise ValidationError("Patient not found")
@@ -202,6 +235,12 @@ class AppointmentsService:
         return appointment
 
     def _ensure_slot_available(self, doctor_id: int, start: datetime, end: datetime) -> None:
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Checking slot availability for doctor {doctor_id}: {start} to {end}")
+        
+        # Check for conflicting appointments
         stmt = (
             select(AppointmentModel)
             .where(AppointmentModel.doctor_id == doctor_id)
@@ -211,8 +250,10 @@ class AppointmentsService:
         )
         conflict = self._session.scalars(stmt).first()
         if conflict:
-            raise ValidationError("Doctor already has an appointment in this slot")
+            logger.warning(f"Found conflicting appointment: {conflict.id} from {conflict.start_at} to {conflict.end_at}")
+            raise ValidationError(f"Doctor already has an appointment in this slot (conflicting appointment ID: {conflict.id})")
 
+        # Check if doctor is available during this time
         availability = self._session.scalars(
             select(AvailabilityModel)
             .where(AvailabilityModel.doctor_id == doctor_id)
@@ -220,7 +261,10 @@ class AppointmentsService:
             .where(AvailabilityModel.end_at >= end)
         ).first()
         if not availability:
+            logger.warning(f"No availability found for doctor {doctor_id} during {start} to {end}")
             raise ValidationError("Doctor is not available in this time range")
+        
+        logger.info(f"Slot is available, found availability ID: {availability.id}")
 
     def _deny_overlapping_availability(
         self,
@@ -267,12 +311,23 @@ class AppointmentsService:
 
     @staticmethod
     def _block_to_schema(model: AppointmentBlockModel) -> AppointmentBlock:
+        # Ensure timezone-aware datetimes
+        start_at = model.start_at
+        end_at = model.end_at
+        
+        if start_at.tzinfo is None:
+            from datetime import timezone
+            start_at = start_at.replace(tzinfo=timezone.utc)
+        if end_at.tzinfo is None:
+            from datetime import timezone
+            end_at = end_at.replace(tzinfo=timezone.utc)
+            
         return AppointmentBlock(
             id=model.id,
             availability_id=model.availability_id,
             block_number=model.block_number,
-            start_at=model.start_at,
-            end_at=model.end_at,
+            start_at=start_at,
+            end_at=end_at,
             is_booked=model.is_booked,
         )
 

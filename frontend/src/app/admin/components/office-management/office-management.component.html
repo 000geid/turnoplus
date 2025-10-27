@@ -35,7 +35,7 @@
     <div *ngFor="let office of offices" class="office-card">
       <div class="office-card__content">
         <div class="office-card__header">
-          <h3>{{ office.name || office.code }}</h3>
+          <h3>{{ office.code }} · {{ office.name || 'Sin nombre' }} (ID {{ office.id }})</h3>
           <span class="office-code">{{ office.code }}</span>
         </div>
         <div class="office-card__details">
@@ -84,7 +84,9 @@
             name="code"
             required
             placeholder="Ej: OFC-001"
-            class="form-control">
+            class="form-control"
+            [readOnly]="!!editingOffice">
+          <small *ngIf="editingOffice" class="form-help">El código no se puede cambiar</small>
         </div>
 
         <div class="form-group">

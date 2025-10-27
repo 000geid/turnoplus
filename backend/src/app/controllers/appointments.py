@@ -35,13 +35,24 @@ def list_doctor_appointments(doctor_id: int) -> list[Appointment]:
 
 
 def book_appointment(data: AppointmentCreate) -> Appointment:
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Booking appointment request: {data}")
+    
     broker = get_dbbroker()
     with broker.session() as session:
         svc = AppointmentsService(session)
         try:
-            return svc.book(data)
+            result = svc.book(data)
+            logger.info(f"Successfully booked appointment: {result.id}")
+            return result
         except ValidationError as exc:
+            logger.warning(f"Validation error booking appointment: {exc}")
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except Exception as exc:
+            logger.error(f"Unexpected error booking appointment: {exc}")
+            raise HTTPException(status_code=500, detail="Internal server error while booking appointment") from exc
 
 
 def cancel_appointment(appointment_id: int) -> Appointment:

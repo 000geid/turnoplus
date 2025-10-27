@@ -53,6 +53,11 @@ class OfficesService:
             if not office:
                 return None
 
+            # Lock office code: ignore any attempt to change it
+            if "code" in changes:
+                # If code was provided, drop it so it cannot be modified
+                changes.pop("code", None)
+
             for field, value in changes.items():
                 if hasattr(office, field):
                     setattr(office, field, value)
