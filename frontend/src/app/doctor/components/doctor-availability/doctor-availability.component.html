@@ -109,6 +109,7 @@
         [loading]="loading"
         (daySelected)="onDaySelected($event)"
         (availabilitySelected)="onAvailabilitySelected($event)"
+        (configureAvailability)="onConfigureAvailability($event)"
       />
       
       @if (!hasAvailability()) {

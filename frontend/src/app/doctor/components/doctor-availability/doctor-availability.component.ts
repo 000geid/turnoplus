@@ -270,6 +270,20 @@ export class DoctorAvailabilityComponent {
     console.log('Day selected:', date);
   }
 
+  onConfigureAvailability(date: Date): void {
+    // Pre-fill the form with the selected date
+    const dateString = date.toISOString().split('T')[0];
+    this.form.patchValue({
+      date: dateString
+    });
+    
+    // Scroll to form for better UX
+    const formElement = document.querySelector('.doctor-availability__form');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   onAvailabilitySelected(availability: AvailabilityDto): void {
     // Handle availability selection if needed
     console.log('Availability selected:', availability);

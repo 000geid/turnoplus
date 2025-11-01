@@ -76,6 +76,115 @@ export class DoctorShellComponent {
 
   readonly doctorName = computed(() => this.doctorGreeting());
 
+  // Enhanced computed properties for dashboard
+  readonly greetingMessage = computed(() => {
+    const hour = new Date().getHours();
+    const name = this.doctorName();
+    
+    if (hour < 12) return `Buenos días, Dr. ${name}`;
+    if (hour < 18) return `Buenas tardes, Dr. ${name}`;
+    return `Buenas noches, Dr. ${name}`;
+  });
+
+  // Current date formatting
+  readonly currentDateFormatted = computed(() => {
+    return new Date().toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  });
+
+  // Today's appointments
+  readonly todayAppointments = computed(() => {
+    const today = new Date().toDateString();
+    return this.sortedAppointments().filter(apt =>
+      new Date(apt.startAt).toDateString() === today
+    );
+  });
+
+  // Weekly appointments (current week)
+  readonly weeklyAppointments = computed(() => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    return this.sortedAppointments().filter(apt => {
+      const aptDate = new Date(apt.startAt);
+      return aptDate >= startOfWeek && aptDate <= endOfWeek;
+    });
+  });
+
+  // Weekly statistics
+  readonly weeklyStats = computed(() => {
+    const weekAppointments = this.weeklyAppointments();
+    return {
+      total: weekAppointments.length,
+      confirmed: weekAppointments.filter(apt => apt.status === 'confirmed').length,
+      pending: weekAppointments.filter(apt => apt.status === 'pending').length,
+      completed: weekAppointments.filter(apt => apt.status === 'completed').length,
+      canceled: weekAppointments.filter(apt => apt.status === 'canceled').length
+    };
+  });
+
+  // Today's availability
+  readonly todayAvailability = computed(() => {
+    const today = new Date().toDateString();
+    return this.availability().filter(avail =>
+      new Date(avail.startAt).toDateString() === today
+    );
+  });
+
+  // Next available slot
+  readonly nextAvailableSlot = computed(() => {
+    const now = new Date();
+    const futureAvailability = this.availability().filter(avail =>
+      new Date(avail.startAt) > now
+    );
+    
+    if (futureAvailability.length === 0) return null;
+    
+    futureAvailability.sort((a, b) =>
+      new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+    );
+    
+    return futureAvailability[0];
+  });
+
+  // Patient name lookup
+  readonly patientNames = computed(() => {
+    const names: { [key: number]: string } = {};
+    this.patients().forEach(patient => {
+      names[patient.id] = patient.full_name || `Paciente #${patient.id}`;
+    });
+    return names;
+  });
+
+  // Enhanced appointments with patient names
+  readonly appointmentsWithPatientNames = computed(() => {
+    const names = this.patientNames();
+    return this.sortedAppointments().map(apt => ({
+      ...apt,
+      patientName: names[apt.patient_id] || `Paciente #${apt.patient_id}`
+    }));
+  });
+
+  // Map appointment IDs to patient names for template access
+  readonly appointmentPatientNameMap = computed(() => {
+    const names = this.patientNames();
+    return this.sortedAppointments().reduce((map, apt) => {
+      map[apt.id] = names[apt.patient_id] || `Paciente #${apt.patient_id}`;
+      return map;
+    }, {} as { [key: number]: string });
+  });
+
   readonly tabs: TabConfig[] = [
     {
       id: 'dashboard',

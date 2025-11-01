@@ -12,48 +12,113 @@
 
   <div slot="dashboard">
     <div class="doctor-dashboard">
-      <div class="doctor-dashboard__stats">
-        <div class="stat-card">
-          <h3>Turnos Hoy</h3>
-          <p class="stat-number">{{ sortedAppointments().length }}</p>
-        </div>
-        <div class="stat-card">
-          <h3>Disponibilidad</h3>
-          <p class="stat-number">{{ availability().length }}</p>
-        </div>
-        <div class="stat-card">
-          <h3>Registros</h3>
-          <p class="stat-number">{{ records().length }}</p>
-        </div>
-      </div>
-      
-      <div class="doctor-dashboard__recent">
-        <h3>Próximos Turnos</h3>
-        @if (isLoadingAppointments() && !sortedAppointments().length) {
-          <p class="placeholder">Cargando turnos…</p>
-        } @else if (!sortedAppointments().length) {
-          <p class="placeholder">
-            Todavía no tenés turnos asignados. Tus citas confirmadas aparecerán acá.
-          </p>
-        } @else {
-          <ul class="appointments-list">
-            @for (appointment of sortedAppointments().slice(0, 5); track appointment.id) {
-              <li class="appointment-item">
-                <div>
-                  <h4>Paciente #{{ appointment.patient_id }}</h4>
-                  <p>
-                    {{ appointment.startAt | date: 'EEEE d MMMM' }} ·
-                    {{ appointment.startAt | date: 'HH:mm' }} -
-                    {{ appointment.endAt | date: 'HH:mm' }}
-                  </p>
-                </div>
-                <span class="status" [ngClass]="appointment.status">
-                  {{ appointment.status }}
-                </span>
-              </li>
+      <!-- Enhanced Greeting Section -->
+      <section class="dashboard-greeting">
+        <div class="greeting-content">
+          <h1>{{ greetingMessage() }}</h1>
+          <p class="current-date">{{ currentDateFormatted() }}</p>
+          <p class="status-message">
+            @if (todayAppointments().length > 0) {
+              Tenés {{ todayAppointments().length }} turno(s) hoy
+            } @else {
+              No tenés turnos agendados para hoy
             }
-          </ul>
-        }
+          </p>
+        </div>
+      </section>
+
+      <!-- Main Dashboard Grid -->
+      <div class="dashboard-grid">
+        <!-- Today's Schedule -->
+        <section class="dashboard-section today-schedule">
+          <div class="section-header">
+            <h2>Agenda de Hoy</h2>
+            <span class="appointment-count">{{ todayAppointments().length }} turnos</span>
+          </div>
+          
+          @if (isLoadingAppointments() && !todayAppointments().length) {
+            <p class="placeholder">Cargando turnos…</p>
+          } @else if (todayAppointments().length === 0) {
+            <div class="empty-state">
+              <p>No tenés turnos programados para hoy</p>
+            </div>
+          } @else {
+            <div class="schedule-timeline">
+              @for (appointment of todayAppointments(); track appointment.id) {
+                <div class="appointment-card" [ngClass]="appointment.status">
+                  <div class="appointment-time">
+                    {{ appointment.startAt | date: 'HH:mm' }} - {{ appointment.endAt | date: 'HH:mm' }}
+                  </div>
+                  <div class="appointment-details">
+                    <h4>{{ appointmentPatientNameMap()[appointment.id] }}</h4>
+                    <span class="status-badge" [ngClass]="appointment.status">
+                      {{ appointment.status }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- Weekly Overview -->
+        <section class="dashboard-section weekly-overview">
+          <div class="section-header">
+            <h2>Resumen Semanal</h2>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-number">{{ weeklyStats().total }}</span>
+              <span class="stat-label">Total Turnos</span>
+            </div>
+            <div class="stat-item confirmed">
+              <span class="stat-number">{{ weeklyStats().confirmed }}</span>
+              <span class="stat-label">Confirmados</span>
+            </div>
+            <div class="stat-item pending">
+              <span class="stat-number">{{ weeklyStats().pending }}</span>
+              <span class="stat-label">Pendientes</span>
+            </div>
+            <div class="stat-item completed">
+              <span class="stat-number">{{ weeklyStats().completed }}</span>
+              <span class="stat-label">Completados</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Availability Status -->
+        <section class="dashboard-section availability-status">
+          <div class="section-header">
+            <h2>Disponibilidad</h2>
+          </div>
+          
+          <div class="availability-info">
+            <div class="availability-item">
+              <span class="label">Hoy:</span>
+              <span class="value">{{ todayAvailability().length }} bloques disponibles</span>
+            </div>
+            
+            @if (nextAvailableSlot()) {
+              <div class="availability-item">
+                <span class="label">Próximo:</span>
+                <span class="value">
+                  {{ nextAvailableSlot()!.startAt | date: 'EEEE d MMMM' }} ·
+                  {{ nextAvailableSlot()!.startAt | date: 'HH:mm' }}
+                </span>
+              </div>
+            } @else {
+              <div class="availability-item">
+                <span class="label">Próximo:</span>
+                <span class="value no-availability">Sin disponibilidad futura</span>
+              </div>
+            }
+            
+            <button class="btn btn-primary" (click)="refreshAvailability()">
+              Actualizar Disponibilidad
+            </button>
+          </div>
+        </section>
       </div>
     </div>
   </div>

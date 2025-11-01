@@ -1,7 +1,7 @@
 .tabbed-shell {
-  padding: 2rem;
+  padding: var(--space-6);
   display: grid;
-  gap: 2rem;
+  gap: var(--space-6);
   min-height: 100vh;
 }
 
@@ -9,89 +9,116 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1.5rem;
+  gap: var(--space-6);
   flex-wrap: wrap;
-  padding: 2rem;
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--space-3);
+  box-shadow: var(--shadow-md);
 }
 
-.tabbed-shell__title h2 {
-  margin: 0;
-  color: var(--brand-900, #0f766e);
-  font-size: 1.875rem;
-  font-weight: 700;
-}
+.tabbed-shell__title {
+  h2 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+  }
 
-.tabbed-shell__title p {
-  margin: 0.5rem 0 0;
-  color: var(--gray-600, #6b7280);
-  font-size: 1rem;
-  line-height: 1.5;
+  p {
+    margin: var(--space-2) 0 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-normal);
+  }
 }
 
 .tabbed-shell__actions {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-3);
   align-items: center;
 }
 
 .tabbed-shell__error {
   margin: 0;
-  padding: 1rem 1.5rem;
-  border-radius: 0.75rem;
-  background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  font-weight: 500;
+  padding: var(--space-4);
+  border-radius: var(--space-2);
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  border: 1px solid rgba(var(--color-danger-rgb), 0.3);
+  font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
+// Enhanced tab system with strong contrast
 .tabbed-shell__tabs {
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--space-3);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
 
   ::ng-deep {
     .mat-mdc-tab-group {
       .mat-mdc-tab-header {
-        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-        background: #f8fafc;
+        border-bottom: 2px solid var(--color-border);
+        background: var(--color-surface-alt);
+        min-height: 64px;
       }
 
       .mat-mdc-tab {
-        min-width: 120px;
+        min-width: 140px;
+        padding: 0 var(--space-2);
         
         .mat-mdc-tab-label {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          padding: 1rem 1.5rem;
-          font-weight: 500;
-          color: var(--gray-600, #6b7280);
+          gap: var(--space-2);
+          padding: var(--space-4) var(--space-6);
+          font-weight: var(--font-weight-medium);
+          color: var(--color-text-secondary);
+          font-size: var(--font-size-sm);
+          transition: all 0.2s ease;
           
           mat-icon {
-            font-size: 1rem;
-            width: 1rem;
-            height: 1rem;
+            font-size: var(--font-size-lg);
+            width: var(--font-size-lg);
+            height: var(--font-size-lg);
+            opacity: 0.8;
+          }
+
+          &:hover {
+            background: var(--color-secondary-light);
+            color: var(--color-text-primary);
           }
         }
 
         &.mdc-tab--active .mat-mdc-tab-label {
-          color: var(--brand-700, #0d9488);
-          font-weight: 600;
+          color: var(--color-primary);
+          font-weight: var(--font-weight-semibold);
+          background: var(--color-primary-light);
+          
+          mat-icon {
+            color: var(--color-primary);
+          }
         }
 
-        &:hover .mat-mdc-tab-label {
-          color: var(--brand-600, #0d9488);
+        &:focus .mat-mdc-tab-label {
+          background: var(--color-secondary-light);
+          outline: 2px solid rgba(var(--color-primary-rgb), 0.2);
+          outline-offset: -2px;
         }
       }
 
       .mat-mdc-tab-body-wrapper {
         .mat-mdc-tab-body-content {
-          padding: 2rem;
-          min-height: 400px;
+          padding: var(--space-8);
+          min-height: 500px;
+          background: var(--color-surface);
         }
       }
     }
@@ -102,22 +129,73 @@
   width: 100%;
 }
 
-// Responsive design
+// Enhanced responsive design
 @media (max-width: 768px) {
   .tabbed-shell {
-    padding: 1rem;
-    gap: 1rem;
+    padding: var(--space-4);
+    gap: var(--space-4);
   }
 
   .tabbed-shell__header {
-    padding: 1.5rem;
+    padding: var(--space-4);
     flex-direction: column;
     align-items: stretch;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .tabbed-shell__actions {
-    justify-content: flex-end;
+    justify-content: stretch;
+    flex-wrap: wrap;
+  }
+
+  .tabbed-shell__tabs {
+    ::ng-deep {
+      .mat-mdc-tab-group {
+        .mat-mdc-tab {
+          min-width: 100px;
+          padding: 0 var(--space-1);
+          
+          .mat-mdc-tab-label {
+            padding: var(--space-3) var(--space-3);
+            font-size: var(--font-size-xs);
+            gap: var(--space-1);
+            
+            mat-icon {
+              font-size: var(--font-size-base);
+              width: var(--font-size-base);
+              height: var(--font-size-base);
+            }
+          }
+        }
+
+        .mat-mdc-tab-body-wrapper {
+          .mat-mdc-tab-body-content {
+            padding: var(--space-4);
+            min-height: 300px;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .tabbed-shell {
+    padding: var(--space-2);
+  }
+
+  .tabbed-shell__header {
+    padding: var(--space-3);
+  }
+
+  .tabbed-shell__title {
+    h2 {
+      font-size: var(--font-size-2xl);
+    }
+
+    p {
+      font-size: var(--font-size-base);
+    }
   }
 
   .tabbed-shell__tabs {
@@ -127,21 +205,8 @@
           min-width: 80px;
           
           .mat-mdc-tab-label {
-            padding: 0.75rem 1rem;
-            font-size: 0.875rem;
-            
-            mat-icon {
-              font-size: 0.875rem;
-              width: 0.875rem;
-              height: 0.875rem;
-            }
-          }
-        }
-
-        .mat-mdc-tab-body-wrapper {
-          .mat-mdc-tab-body-content {
-            padding: 1.5rem;
-            min-height: 300px;
+            padding: var(--space-2) var(--space-2);
+            font-size: var(--font-size-xs);
           }
         }
       }

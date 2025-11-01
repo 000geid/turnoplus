@@ -1,87 +1,180 @@
-// Admin shell specific styles
 .admin-dashboard {
   display: grid;
-  gap: 2rem;
+  gap: var(--space-8);
 }
 
 .admin-dashboard__stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-6);
 }
 
+// Enhanced stat cards with strong contrast
 .stat-card {
-  padding: 1.5rem;
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--space-3);
+  box-shadow: var(--shadow-md);
   text-align: center;
-}
+  transition: all 0.2s ease;
 
-.stat-card h3 {
-  margin: 0 0 0.5rem;
-  color: var(--gray-600, #6b7280);
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
+  &:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+  }
 
-.stat-number {
-  margin: 0;
-  color: var(--brand-900, #0f766e);
-  font-size: 2.5rem;
-  font-weight: 700;
-  line-height: 1;
+  h3 {
+    margin: 0 0 var(--space-3) 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: var(--line-height-normal);
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+  }
 }
 
 .admin-dashboard__recent {
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-}
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--space-3);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6);
 
-.admin-dashboard__recent h3 {
-  margin: 0 0 1.5rem;
-  color: var(--brand-900, #0f766e);
-  font-size: 1.25rem;
-  font-weight: 600;
+  h3 {
+    margin: 0 0 var(--space-4) 0;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-tight);
+  }
 }
 
 .admin-section {
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-}
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--space-3);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6);
 
-.admin-section h3 {
-  margin: 0 0 1rem;
-  color: var(--brand-900, #0f766e);
-  font-size: 1.25rem;
-  font-weight: 600;
+  h3 {
+    margin: 0 0 var(--space-4) 0;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-tight);
+  }
 }
 
 .placeholder {
   margin: 0;
-  color: var(--gray-600, #6b7280);
+  color: var(--color-text-muted);
   font-style: italic;
   text-align: center;
-  padding: 2rem;
+  padding: var(--space-8);
+  font-size: var(--font-size-base);
 }
 
-.btn.btn-primary {
-  background: var(--brand-700, #0d9488);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
+// Enhanced button styling
+.btn {
+  &.btn-primary {
+    background: var(--color-primary);
+    color: white;
+    border: 1px solid var(--color-primary);
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--space-1);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    text-decoration: none;
 
-  &:hover {
-    background: var(--brand-800, #0f766e);
+    &:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
+      box-shadow: var(--shadow-md);
+    }
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.2);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Responsive design for admin shell
+@media (max-width: 768px) {
+  .admin-dashboard {
+    gap: var(--space-6);
+  }
+
+  .admin-dashboard__stats {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .stat-card {
+    padding: var(--space-4);
+
+    h3 {
+      font-size: var(--font-size-xs);
+    }
+
+    p {
+      font-size: var(--font-size-2xl);
+    }
+  }
+
+  .admin-dashboard__recent,
+  .admin-section {
+    padding: var(--space-4);
+
+    h3 {
+      font-size: var(--font-size-lg);
+    }
+  }
+
+  .placeholder {
+    padding: var(--space-6);
+    font-size: var(--font-size-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dashboard__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: var(--space-4);
+
+    p {
+      font-size: var(--font-size-xl);
+    }
+  }
+
+  .btn {
+    &.btn-primary {
+      width: 100%;
+      justify-content: center;
+      padding: var(--space-4);
+    }
   }
 }
