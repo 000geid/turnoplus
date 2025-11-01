@@ -93,6 +93,31 @@
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
     'Apple Color Emoji', 'Segoe UI Emoji';
   color-scheme: light;
+
+  // Backward compatibility variable mappings for existing components
+  // Surface variables
+  --surface-card: var(--color-surface);
+  --surface-section: var(--color-surface-alt);
+  --surface-hover: var(--color-secondary-light);
+  
+  // Text variables
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  
+  // Border variables
+  --border-light: var(--color-border);
+  --border-strong: var(--color-border-strong);
+  
+  // Border radius
+  --border-radius: var(--space-1);
+  
+  // Primary color variables
+  --primary-color: var(--color-primary);
+  --primary-color-dark: var(--color-primary-hover);
+  
+  // Additional success color mapping for consistency
+  --success-color: var(--color-success);
+  --success-color-light: var(--color-success-light);
 }
 
 *,

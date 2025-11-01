@@ -55,6 +55,26 @@ class AppointmentsService:
         appointments = self._session.scalars(stmt).all()
         return [self._to_schema(model) for model in appointments]
 
+    def list_for_patient_filtered(
+        self,
+        patient_id: int,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> list[Appointment]:
+        """List patient appointments with optional date range filtering."""
+        self._ensure_patient_exists(patient_id)
+        
+        stmt = select(AppointmentModel).where(AppointmentModel.patient_id == patient_id)
+        
+        if start_date:
+            stmt = stmt.where(AppointmentModel.start_at >= start_date)
+        if end_date:
+            stmt = stmt.where(AppointmentModel.end_at <= end_date)
+        
+        stmt = stmt.order_by(AppointmentModel.start_at)
+        appointments = self._session.scalars(stmt).all()
+        return [self._to_schema(model) for model in appointments]
+
     def list_for_doctor(self, doctor_id: int) -> list[Appointment]:
         self._ensure_doctor_exists(doctor_id)
         stmt = (

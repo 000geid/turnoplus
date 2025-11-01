@@ -2,7 +2,26 @@
 
 ## Current Development Status
 
-TurnoPlus is currently in active development with a solid foundation established for both backend and frontend components. The project has progressed through initial setup and is now in the feature implementation phase.
+TurnoPlus is currently in active development with a solid foundation established for both backend and frontend components. The project has progressed through initial setup and is now in the feature implementation phase with recent major architectural improvements to the booking system.
+
+## Major Recent Changes - Simplified Booking Architecture
+
+### Frontend Architecture Improvements
+- **Simplified Booking Flow**: Completely restructured the "Reservar turno" (appointment booking) section in the patient dashboard
+- **Reduced Code Duplication**: Eliminated 2 redundant calendar components (`doctor-selection-calendar`, `patient-availability-calendar`) and their combined ~500+ lines of duplicated code
+- **New Shared Components**:
+  - `shared/components/calendar/shared-calendar.component.ts` - Reusable calendar with configurable modes
+  - `shared/components/doctor-autocomplete/doctor-autocomplete.component.ts` - Enhanced doctor search with autocomplete
+- **Cleaner Architecture**: Patient booking now uses only essential components: search bar + calendar, removing complex view modes and redundant components
+- **Better UX**: Simplified interface focusing on doctor search with autocomplete and single calendar view showing selected doctor's availability
+
+### Code Reduction Results
+- **Removed**: ~500 lines of duplicated calendar logic
+- **Consolidated**: Three separate calendar components into one shared, configurable component
+- **Improved**: Code maintainability with single source of truth for calendar functionality
+- **Enhanced**: Search experience with real-time filtering and autocomplete
+
+## Current Development Status
 
 ## Recently Completed Work
 

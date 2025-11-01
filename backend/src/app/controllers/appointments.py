@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from fastapi import HTTPException
 
@@ -20,6 +21,21 @@ def list_patient_appointments(patient_id: int) -> list[Appointment]:
         svc = AppointmentsService(session)
         try:
             return svc.list_for_patient(patient_id)
+        except ValidationError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+def list_patient_appointments_filtered(
+    patient_id: int,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None
+) -> list[Appointment]:
+    """List patient appointments with date range filtering."""
+    broker = get_dbbroker()
+    with broker.session() as session:
+        svc = AppointmentsService(session)
+        try:
+            return svc.list_for_patient_filtered(patient_id, start_date, end_date)
         except ValidationError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 

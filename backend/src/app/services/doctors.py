@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Iterator
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -14,6 +14,7 @@ from app.models.user import User as UserModel
 from app.models.patient import Patient as PatientModel
 from app.models.appointment import Appointment as AppointmentModel
 from app.models.office import Office as OfficeModel
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Doctor, DoctorCreate, DoctorUpdate, Patient
 from app.utils.security import hash_password, verify_password
 
@@ -32,6 +33,27 @@ class DoctorsService:
             stmt = select(DoctorModel).options(joinedload(DoctorModel.user))
             doctors = session.scalars(stmt).all()
             return [self._to_schema(model) for model in doctors if model.user]
+
+    def list_paginated(self, page: int = 1, size: int = 10) -> PaginatedResponse[Doctor]:
+        """Get paginated list of doctors."""
+        with self._session_scope() as session:
+            stmt = select(DoctorModel).options(joinedload(DoctorModel.user))
+            
+            # Get total count
+            count_stmt = select(DoctorModel).options(joinedload(DoctorModel.user))
+            total = session.scalar(select(func.count()).select_from(count_stmt.subquery())) or 0
+            
+            # Apply pagination
+            offset = (page - 1) * size
+            paginated_stmt = stmt.offset(offset).limit(size)
+            doctors = session.scalars(paginated_stmt).all()
+            
+            return PaginatedResponse.create(
+                items=[self._to_schema(model) for model in doctors if model.user],
+                total=total,
+                page=page,
+                size=size
+            )
 
     def get(self, doctor_id: int) -> Doctor | None:
         with self._session_scope() as session:
@@ -119,33 +141,51 @@ class DoctorsService:
     def get_patients_for_doctor(self, doctor_id: int) -> list[Patient]:
         """Get all patients that have had appointments with this doctor."""
         with self._session_scope() as session:
-            # First verify doctor exists
-            doctor = session.get(DoctorModel, doctor_id)
-            if not doctor or not doctor.user:
-                return []
-
-            # Get unique patient IDs from appointments
-            stmt = (
-                select(AppointmentModel.patient_id)
-                .where(AppointmentModel.doctor_id == doctor_id)
-                .distinct()
-            )
-            patient_ids = session.scalars(stmt).all()
-
-            if not patient_ids:
-                return []
-
             # Get patient details with user info, ordered by most recent appointment
             stmt = (
                 select(PatientModel)
                 .options(joinedload(PatientModel.user))
-                .where(PatientModel.id.in_(patient_ids))
                 .join(AppointmentModel, PatientModel.id == AppointmentModel.patient_id)
                 .where(AppointmentModel.doctor_id == doctor_id)
                 .order_by(AppointmentModel.start_at.desc())
+                .distinct()
             )
             patients = session.scalars(stmt).all()
             return [self._patient_to_schema(patient) for patient in patients if patient.user]
+
+    def get_patients_for_doctor_paginated(self, doctor_id: int, page: int = 1, size: int = 10) -> PaginatedResponse[Patient]:
+        """Get paginated list of patients that have had appointments with this doctor."""
+        with self._session_scope() as session:
+            # Get total count
+            count_stmt = (
+                select(func.count(PatientModel.id))
+                .join(AppointmentModel, PatientModel.id == AppointmentModel.patient_id)
+                .where(AppointmentModel.doctor_id == doctor_id)
+                .distinct()
+            )
+            total = session.scalar(count_stmt) or 0
+            
+            # Get paginated patients
+            stmt = (
+                select(PatientModel)
+                .options(joinedload(PatientModel.user))
+                .join(AppointmentModel, PatientModel.id == AppointmentModel.patient_id)
+                .where(AppointmentModel.doctor_id == doctor_id)
+                .order_by(AppointmentModel.start_at.desc())
+                .distinct()
+            )
+            
+            # Apply pagination
+            offset = (page - 1) * size
+            paginated_stmt = stmt.offset(offset).limit(size)
+            patients = session.scalars(paginated_stmt).all()
+            
+            return PaginatedResponse.create(
+                items=[self._patient_to_schema(patient) for patient in patients if patient.user],
+                total=total,
+                page=page,
+                size=size
+            )
 
     def authenticate(self, email: str, password: str) -> tuple[Doctor, str] | None:
         with self._session_scope() as session:

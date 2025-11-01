@@ -1,0 +1,118 @@
+<div class="shared-calendar" [class]="'mode-' + mode">
+  <!-- Calendar Header -->
+  @if (showMonthNavigation) {
+    <div class="calendar-header">
+      <div class="calendar-nav">
+        <button type="button" class="btn btn-secondary" (click)="previousMonth()" [disabled]="loading">
+          <span class="icon">‹</span>
+        </button>
+        <h3 class="calendar-title">{{ monthName() }}</h3>
+        <button type="button" class="btn btn-secondary" (click)="nextMonth()" [disabled]="loading">
+          <span class="icon">›</span>
+        </button>
+      </div>
+      @if (showTodayButton) {
+        <button type="button" class="btn btn-outline today-btn" (click)="goToToday()" [disabled]="loading">
+          Hoy
+        </button>
+      }
+    </div>
+  }
+
+  @if (loading) {
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Cargando calendario...</p>
+    </div>
+  } @else {
+    <!-- Calendar Grid -->
+    <div class="calendar-grid">
+      <!-- Day Headers -->
+      <div class="day-headers">
+        <div class="day-header">Lun</div>
+        <div class="day-header">Mar</div>
+        <div class="day-header">Mié</div>
+        <div class="day-header">Jue</div>
+        <div class="day-header">Vie</div>
+        <div class="day-header weekend">Sáb</div>
+        <div class="day-header weekend">Dom</div>
+      </div>
+
+      <!-- Calendar Days -->
+      <div class="calendar-days">
+        @for (day of calendarDays(); track day.date.toISOString()) {
+          <div
+            class="calendar-day"
+            [class.current-month]="day.isCurrentMonth"
+            [class.today]="day.isToday"
+            [class.selected]="isDaySelected(day)"
+            [class.has-data]="hasData(day)"
+            [class.weekend]="isWeekend(day)"
+            [class.past-day]="isPastDay(day)"
+            [class.empty-day]="!hasData(day) && day.isCurrentMonth"
+            [class.clickable]="day.isCurrentMonth"
+            [class.has-availability]="hasAvailableSlots(day) && day.isCurrentMonth"
+            [class.availability-low]="getAvailabilityLevel(day) === 'low' && day.isCurrentMonth"
+            [class.availability-medium]="getAvailabilityLevel(day) === 'medium' && day.isCurrentMonth"
+            [class.availability-high]="getAvailabilityLevel(day) === 'high' && day.isCurrentMonth"
+            [style.background-color]="getAvailabilityColor(day)"
+            (click)="day.isCurrentMonth && selectDay(day)"
+          >
+            <div class="day-number">{{ day.date.getDate() }}</div>
+            
+            @if (hasAvailableSlots(day) && day.isCurrentMonth && mode === 'availability') {
+              <div class="availability-indicator">
+                <div class="availability-dots">
+                  {{ getAvailabilityIcon(day) }}
+                </div>
+                <div class="availability-count">
+                  {{ getAvailableSlotsCount(day) }}
+                </div>
+              </div>
+            } @else if (hasData(day) && day.isCurrentMonth) {
+              <div class="day-content">
+                <div class="data-summary">
+                  {{ getDataSummary(day) }}
+                </div>
+                
+                <!-- Custom content if provided -->
+                @if (customDayContent) {
+                  <div class="custom-content">
+                    {{ customDayContent(day) }}
+                  </div>
+                }
+              </div>
+            } @else if (!hasData(day) && day.isCurrentMonth && !isPastDay(day) && mode !== 'availability') {
+              <div class="no-data">
+                Sin datos
+              </div>
+            }
+            
+            @if (day.isToday) {
+              <div class="today-indicator">Hoy</div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Selected Day Details -->
+    @if (selectedDate()) {
+      <div class="selected-day-details">
+        <h4>{{ selectedDate() | date: 'EEEE d MMMM' }}</h4>
+        <ng-content select="[slot=day-details]"></ng-content>
+      </div>
+    }
+  }
+
+  <!-- Calendar Instructions -->
+  @if (!selectedDate() && !loading) {
+    <div class="calendar-instructions">
+      <div class="instructions-content">
+        <div class="instruction-icon">📅</div>
+        <h4>Calendario activo</h4>
+        <p>Hacé clic en un día para ver los detalles o seleccionar una fecha.</p>
+      </div>
+    </div>
+  }
+</div>

@@ -2,95 +2,124 @@
   <header class="patient-booking__header">
     <div>
       <h3>Reservar nuevo turno</h3>
-      <p>Elegí un profesional y seleccioná uno de los horarios disponibles.</p>
+      <p>Buscá un profesional y elegí un horario disponible en su agenda.</p>
     </div>
   </header>
 
-  <!-- Messages now handled by toast notifications -->
-
-  <!-- Doctor Selection Calendar -->
-  <app-doctor-selection-calendar
+  <!-- Doctor Selection -->
+  <app-doctor-autocomplete
     [doctors]="doctors()"
-    [selectedDoctorId]="selectedDoctorId()"
-    [isLoadingDoctors]="isLoadingDoctors()"
-    [doctorAvailabilityMap]="doctorAvailabilityMap()"
+    [selectedDoctor]="selectedDoctor()"
+    [loading]="isLoadingDoctors()"
+    label="Seleccionar profesional"
+    placeholder="Escribí el nombre o especialidad..."
+    [showSpecialties]="true"
+    [doctorAvailabilities]="getDoctorAvailabilityMap()"
     (doctorSelected)="onDoctorSelected($event)"
-    (viewModeChanged)="onViewModeChanged($event)"
+    (searchChanged)="onSearchChanged($event)"
   />
 
-  <!-- View Toggle -->
-  @if (selectedDoctor()) {
-    <div class="view-toggle">
-      <button
-        type="button"
-        class="toggle-btn"
-        [class.active]="viewMode() === 'list'"
-        (click)="onViewModeChange('list')"
-      >
-        📋 Lista
-      </button>
-      <button
-        type="button"
-        class="toggle-btn"
-        [class.active]="viewMode() === 'calendar'"
-        (click)="onViewModeChange('calendar')"
-      >
-        📅 Calendario
-      </button>
+  <!-- Availability Summary -->
+  @if (selectedDoctor(); as doctor) {
+    <div class="availability-summary">
+      <div class="selected-doctor-info">
+        <h4>Disponibilidad de {{ doctor.full_name || doctor.email }}</h4>
+        @if (doctor.specialty) {
+          <p class="doctor-specialty">{{ doctor.specialty }}</p>
+        }
+      </div>
+      
+      @if (availableBlocks().length > 0) {
+        <div class="summary-stats">
+          <div class="stat-item">
+            <span class="stat-number">{{ getQuickAvailabilitySummary().today }}</span>
+            <span class="stat-label">hoy</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ getQuickAvailabilitySummary().week }}</span>
+            <span class="stat-label">esta semana</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ getQuickAvailabilitySummary().month }}</span>
+            <span class="stat-label">este mes</span>
+          </div>
+        </div>
+      }
     </div>
-  }
 
-  <!-- Content based on view mode -->
-  @if (viewMode() === 'list') {
-    @if (isLoadingAvailability()) {
-      <p class="patient-booking__placeholder">Buscando turnos disponibles…</p>
-    } @else if (isLoadingBlocks()) {
-      <p class="patient-booking__placeholder">Cargando bloques disponibles…</p>
-    } @else if (!availableBlocks().length) {
-      <p class="patient-booking__placeholder">
-        Este profesional no tiene bloques de turnos disponibles por ahora. Probá con otro horario o profesional.
-      </p>
-    } @else {
-      <div class="blocks-section">
-        <h4>Bloques de turnos disponibles</h4>
-        <div class="blocks-grid">
-          @for (block of availableBlocks(); track block.id) {
-            <div class="block-card">
-              <div class="block-info">
-                <h5>{{ formatDateSpanish(block.startAt) }}</h5>
-                <p class="time-range">
-                  {{ formatTimeSpanish(block.startAt) }} - {{ formatTimeSpanish(block.endAt) }} hs
-                </p>
-                <p class="block-status available">
-                  Disponible
-                </p>
+    <div class="calendar-section">
+      <app-shared-calendar
+        mode="availability"
+        [data]="availableBlocks()"
+        [loading]="isLoadingBlocks()"
+        (daySelected)="onCalendarDaySelected($event)"
+        (monthChanged)="onCalendarMonthChanged($event)"
+      >
+        <div slot="day-details">
+          @if (selectedCalendarDay(); as selectedDay) {
+            <div class="day-blocks">
+              <h5>Turnos disponibles para {{ selectedDay.date | date: 'EEEE d MMMM' }}</h5>
+              
+              @if (getSelectedDayBlocks().length > 0) {
+                <div class="blocks-grid">
+                  @for (block of getSelectedDayBlocks(); track block.id) {
+                    <div
+                      class="appointment-block"
+                      [class.past]="isBlockInPast(block)"
+                      [class.clickable]="!isBlockInPast(block)"
+                      (click)="!isBlockInPast(block) && onAppointmentBlockSelected(block)"
+                    >
+                      <div class="block-time">
+                        {{ formatTimeSpanish(block.startAt) }} - {{ formatTimeSpanish(block.endAt) }}
+                      </div>
+                      <div class="block-status">
+                        @if (isBlockInPast(block)) {
+                          <span class="status-past">🕐 Pasado</span>
+                        } @else {
+                          <span class="status-available">✅ Disponible</span>
+                          @if (isBooking()) {
+                            <span class="booking-indicator">Reservando...</span>
+                          }
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="no-blocks">
+                  <div class="empty-icon">📅</div>
+                  <h6>No hay turnos disponibles este día</h6>
+                  <p>Los días con disponibilidad están marcados con puntos verdes en el calendario.</p>
+                  @if (getFirstAvailableDay()) {
+                    <button
+                      type="button"
+                      class="btn btn-outline"
+                      (click)="navigateToNextAvailableDay()"
+                    >
+                      Ir al primer día disponible
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="calendar-instructions">
+              <div class="instruction-content">
+                <div class="instruction-icon">📅</div>
+                <p>Seleccioná un día para ver los horarios disponibles</p>
+                <p class="hint">Los días con disponibilidad están marcados con puntos verdes.</p>
               </div>
-              <button
-                type="button"
-                class="btn btn-primary"
-                (click)="bookBlock(block)"
-                [disabled]="isBooking()"
-              >
-                {{ isBooking() ? 'Reservando…' : 'Reservar' }}
-              </button>
             </div>
           }
         </div>
-      </div>
-    }
-  } @else if (viewMode() === 'calendar') {
-    @if (selectedDoctor()) {
-      <app-patient-availability-calendar
-        [doctors]="doctors()"
-        [selectedDoctorId]="selectedDoctorId()"
-        [loading]="isLoadingBlocks()"
-        (doctorChanged)="onCalendarDoctorChange($event)"
-        (appointmentBlockSelected)="onCalendarAppointmentBlockSelected($event)"
-      />
-    } @else {
-      <div class="no-doctor-selected">
-        <p>Seleccioná un profesional para ver su calendario</p>
-      </div>
-    }
+      </app-shared-calendar>
+    </div>
+  } @else {
+    <div class="no-doctor-selected">
+      <div class="empty-icon">👨‍⚕️</div>
+      <h4>Selecioná un profesional</h4>
+      <p>Elegí un profesional de la lista para ver su disponibilidad de turnos.</p>
+      <p class="hint">Los profesionales con disponibilidad disponible aparecerán con indicadores.</p>
+    </div>
   }
 </section>

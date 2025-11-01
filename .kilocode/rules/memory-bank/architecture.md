@@ -87,6 +87,20 @@ TurnoPlus implements a modern web application architecture with clear separation
 - **Shared Components**: Reusable components across different modules
 - **Core Services**: Authentication, HTTP interceptors, and route guards
 
+#### Shared Components Architecture
+- **shared/components/calendar/**: Reusable calendar component with configurable modes
+  - `shared-calendar.component.ts`: Configurable calendar with doctor/availability modes
+  - Supports different data types and display modes
+  - Provides consistent calendar functionality across modules
+- **shared/components/doctor-autocomplete/**: Enhanced doctor search component
+  - `doctor-autocomplete.component.ts`: Real-time search and selection
+  - Autocomplete with specialty filtering
+  - Single source for doctor selection logic
+- **Component Consolidation**: Eliminated duplicate calendar components
+  - Removed: `doctor-selection-calendar`, `patient-availability-calendar`
+  - Unified calendar logic in shared component
+  - Reduced code duplication by ~500 lines
+
 #### Routing and Navigation
 - **Angular Router**: Client-side routing with lazy-loaded modules
 - **Route Guards**: Authentication and role-based access control

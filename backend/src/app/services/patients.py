@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Iterator
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -11,8 +11,10 @@ from app.db.broker import DBBroker, get_dbbroker
 from app.models.enums import UserRole
 from app.models.patient import Patient as PatientModel
 from app.models.user import User as UserModel
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Patient, PatientCreate, PatientUpdate
 from app.utils.security import hash_password, verify_password
+from app.utils.pagination import paginate_query
 
 
 class PatientsService:
@@ -29,6 +31,27 @@ class PatientsService:
             stmt = select(PatientModel).options(joinedload(PatientModel.user))
             patients = session.scalars(stmt).all()
             return [self._to_schema(model) for model in patients if model.user]
+
+    def list_paginated(self, page: int = 1, size: int = 10) -> PaginatedResponse[Patient]:
+        """Get paginated list of patients."""
+        with self._session_scope() as session:
+            stmt = select(PatientModel).options(joinedload(PatientModel.user))
+            
+            # Get total count
+            count_stmt = select(PatientModel).options(joinedload(PatientModel.user))
+            total = session.scalar(select(func.count()).select_from(count_stmt.subquery())) or 0
+            
+            # Apply pagination
+            offset = (page - 1) * size
+            paginated_stmt = stmt.offset(offset).limit(size)
+            patients = session.scalars(paginated_stmt).all()
+            
+            return PaginatedResponse.create(
+                items=[self._to_schema(model) for model in patients if model.user],
+                total=total,
+                page=page,
+                size=size
+            )
 
     def get(self, patient_id: int) -> Patient | None:
         with self._session_scope() as session:

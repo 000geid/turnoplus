@@ -1,28 +1,23 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, EventEmitter, Input, Output, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { AsyncPipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CommonModule } from '@angular/common';
 import { ToastService } from '../../../shared/services/toast.service';
 import { DoctorsService } from '../../../core/services/doctors.service';
 import { AppointmentsService } from '../../../core/services/appointments.service';
 import { DateFormatService } from '../../../core/services/date-format.service';
 import { DoctorDto } from '../../../core/models/user';
-import { AppointmentCreateRequest, AppointmentDto, AvailabilityDto, AppointmentBlockDto } from '../../../core/models/appointment';
-import { PatientAvailabilityCalendarComponent, PatientCalendarDay } from '../patient-availability-calendar/patient-availability-calendar.component';
-import { DoctorSelectionCalendarComponent } from '../doctor-selection-calendar/doctor-selection-calendar.component';
-
-interface AppointmentSlot {
-  id: string;
-  startAt: Date;
-  endAt: Date;
-  availabilityId: number;
-  blockId?: number;
-}
+import { AppointmentCreateRequest, AppointmentDto, AppointmentBlockDto } from '../../../core/models/appointment';
+import { DoctorAutocompleteComponent } from '../../../shared/components/doctor-autocomplete/doctor-autocomplete.component';
+import { SharedCalendarComponent, CalendarDay } from '../../../shared/components/calendar/shared-calendar.component';
 
 @Component({
   selector: 'app-patient-booking',
   standalone: true,
-imports: [ReactiveFormsModule, PatientAvailabilityCalendarComponent, DoctorSelectionCalendarComponent],
+  imports: [
+    CommonModule,
+    DoctorAutocompleteComponent,
+    SharedCalendarComponent
+  ],
   templateUrl: './patient-booking.component.html',
   styleUrl: './patient-booking.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -35,161 +30,91 @@ export class PatientBookingComponent {
   private readonly appointmentsService = inject(AppointmentsService);
   private readonly dateFormatService = inject(DateFormatService);
   private readonly toastService = inject(ToastService);
-  private readonly fb = new FormBuilder();
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly selectionForm = this.fb.group({
-    doctorId: ['']
-  });
-
   readonly doctors = signal<DoctorDto[]>([]);
-  readonly availability = signal<AvailabilityDto[]>([]);
+  readonly selectedDoctor = signal<DoctorDto | null>(null);
   readonly availableBlocks = signal<AppointmentBlockDto[]>([]);
-  readonly doctorAvailabilityMap = signal<Map<number, number>>(new Map());
-  readonly appointmentSlots = signal<AppointmentSlot[]>([]);
   readonly isLoadingDoctors = signal<boolean>(false);
-  readonly isLoadingAvailability = signal<boolean>(false);
   readonly isLoadingBlocks = signal<boolean>(false);
   readonly isBooking = signal<boolean>(false);
-  readonly message = signal<string | null>(null);
-  readonly error = signal<string | null>(null);
-  readonly viewMode = signal<'list' | 'calendar'>('calendar'); // Toggle between list and calendar view
+  readonly selectedCalendarDay = signal<CalendarDay | null>(null);
 
-  readonly selectedDoctor = computed(() => {
-    const formValue = this.selectionForm.controls.doctorId.value;
+  // Enhanced data structures for better calendar display
+  readonly availabilityByDay = computed(() => {
+    const blocks = this.availableBlocks();
+    const grouped = new Map<string, AppointmentBlockDto[]>();
     
-    console.log('=== selectedDoctor computed ===');
-    console.log('Form value:', formValue);
-    console.log('Doctors count:', this.doctors().length);
+    blocks.forEach(block => {
+      const dateKey = new Date(block.startAt).toDateString();
+      if (!grouped.has(dateKey)) {
+        grouped.set(dateKey, []);
+      }
+      grouped.get(dateKey)!.push(block);
+    });
     
-    // Clear error message when doctor is selected
-    if (formValue && formValue !== '' && this.doctors().length > 0) {
-      this.error.set(null);
-      this.message.set(null);
-    }
-    
-    if (!formValue || formValue === '' || !this.doctors().length) {
-      console.log('Early return: missing form value or doctors not loaded');
-      return null;
-    }
-    
-    // Parse doctor ID and validate
-    const doctorId = parseInt(formValue, 10);
-    console.log('Parsed doctor ID:', doctorId);
-    
-    if (isNaN(doctorId) || doctorId <= 0) {
-      console.log('Invalid doctor ID:', doctorId);
-      return null;
-    }
-    
-    // Find doctor by ID
-    const doctor = this.doctors().find(d => d.id === doctorId);
-    console.log('Found doctor:', doctor);
-    console.log('=== end selectedDoctor ===');
-    
-    return doctor || null;
+    return grouped;
   });
 
-  readonly selectedDoctorId = computed(() => {
-    const formValue = this.selectionForm.controls.doctorId.value;
-    
-    console.log('=== selectedDoctorId computed ===');
-    console.log('Form value:', formValue);
-    
-    if (!formValue || formValue === '') {
-      return null;
-    }
-    
-    const doctorId = parseInt(formValue, 10);
-    const result = (isNaN(doctorId) || doctorId <= 0) ? null : doctorId;
-    console.log('Selected doctor ID result:', result);
-    console.log('=== end selectedDoctorId ===');
-    
-    return result;
-  });
+  readonly now = new Date();
 
   constructor() {
-    this.selectionForm.controls.doctorId.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((id) => {
-        if (id && id !== '') {
-          const doctorId = parseInt(id, 10);
-          if (doctorId > 0) {
-            this.loadAvailability(doctorId);
-          }
-        }
-      });
-      this.loadDoctors();
-    }
-  
-    // New methods for calendar integration
-    onDoctorSelected(doctor: DoctorDto): void {
-      // Update the form and trigger the existing loading logic
-      this.selectionForm.controls.doctorId.setValue(doctor.id.toString());
+    this.loadDoctors();
+  }
+
+  // Doctor selection handlers
+  onDoctorSelected(doctor: DoctorDto | null): void {
+    if (doctor) {
+      this.selectedDoctor.set(doctor);
+      this.selectedCalendarDay.set(null);
+      this.loadAvailabilityForDoctor(doctor.id);
       this.toastService.success(`Profesional seleccionado: ${doctor.full_name || doctor.email}`);
+    } else {
+      this.selectedDoctor.set(null);
+      this.availableBlocks.set([]);
+      this.selectedCalendarDay.set(null);
+    }
+  }
+
+  onSearchChanged(searchTerm: string): void {
+    // Handle search term changes if needed
+    console.log('Doctor search term changed:', searchTerm);
+  }
+
+  // Calendar handlers
+  onCalendarDaySelected(day: CalendarDay): void {
+    this.selectedCalendarDay.set(day);
+  }
+
+  onCalendarMonthChanged(date: Date): void {
+    const doctor = this.selectedDoctor();
+    if (doctor) {
+      this.loadAvailabilityForDoctor(doctor.id);
+    }
+  }
+
+  // Booking handlers
+  onAppointmentBlockSelected(block: AppointmentBlockDto): void {
+    this.bookAppointmentBlock(block);
+  }
+
+  bookAppointmentBlock(block: AppointmentBlockDto): void {
+    const doctor = this.selectedDoctor();
+    if (!doctor || !this.patientId) {
+      this.toastService.error('Faltan datos para reservar el turno.');
+      return;
     }
 
-    onViewModeChanged(mode: 'grid' | 'calendar'): void {
-      // Handle view mode changes from the doctor selection calendar
-      console.log('Doctor selection calendar view mode changed:', mode);
+    if (new Date(block.startAt) <= this.now) {
+      this.toastService.error('No se puede reservar un turno pasado.');
+      return;
     }
-
-    onViewModeChange(mode: 'list' | 'calendar'): void {
-      this.viewMode.set(mode);
-    }
-  
-    onCalendarDoctorChange(doctorId: number): void {
-      // Update the form and trigger the existing loading logic
-      this.selectionForm.controls.doctorId.setValue(doctorId.toString());
-    }
-  
-    onCalendarAppointmentBlockSelected(block: AppointmentBlockDto): void {
-      // Use the existing bookBlock method to handle the booking
-      this.bookBlock(block);
-    }
-  
-    bookBlock(block: AppointmentBlockDto): void {
-      if (!this.patientId) {
-        this.toastService.error('Necesitamos tu sesión para reservar un turno. Ingresá nuevamente.');
-        return;
-      }
-      
-      // Debug doctor selection
-      const formValue = this.selectionForm.controls.doctorId.value;
-      const doctor = this.selectedDoctor();
-      const doctorId = this.selectedDoctorId();
-      const doctorsCount = this.doctors().length;
-      
-      console.log('=== BOOKING DEBUG ===');
-      console.log('Form value:', formValue);
-      console.log('Selected doctor:', doctor);
-      console.log('Selected doctor ID:', doctorId);
-      console.log('Doctors count:', doctorsCount);
-      console.log('Doctors array:', this.doctors());
-      console.log('Block to book:', block);
-      console.log('====================');
-      
-      if (!doctor || !doctorId) {
-        console.error('Doctor selection validation failed:', {
-          formValue,
-          doctor,
-          doctorId,
-          doctorsCount,
-          doctorsArray: this.doctors().slice(0, 3), // First 3 for readability
-          formValid: this.selectionForm.valid,
-          formErrors: this.selectionForm.errors
-        });
-        this.toastService.error('Seleccioná un profesional antes de reservar.');
-        return;
-      }
 
     this.isBooking.set(true);
     this.toastService.info('Reservando turno...', { config: { duration: 0 } });
-    this.error.set(null);
-    this.message.set(null);
 
     const payload: AppointmentCreateRequest = {
-      doctor_id: doctorId,
+      doctor_id: doctor.id,
       patient_id: this.patientId,
       start_at: new Date(block.startAt).toISOString(),
       end_at: new Date(block.endAt).toISOString()
@@ -204,10 +129,9 @@ export class PatientBookingComponent {
           this.toastService.success('¡Turno reservado con éxito!');
           this.booked.emit(appointment);
           
-          // Add a small delay to ensure backend has committed the transaction
+          // Refresh availability
           setTimeout(() => {
-            this.loadAvailability(doctor.id);
-            this.loadAvailableBlocks(doctor.id);
+            this.loadAvailabilityForDoctor(doctor.id);
           }, 500);
         },
         error: () => {
@@ -217,6 +141,7 @@ export class PatientBookingComponent {
       });
   }
 
+  // Data loading
   private loadDoctors(): void {
     this.isLoadingDoctors.set(true);
     this.doctorsService
@@ -225,7 +150,6 @@ export class PatientBookingComponent {
       .subscribe({
         next: (doctors) => {
           this.doctors.set(doctors);
-          this.loadAllDoctorsAvailability(doctors);
           this.isLoadingDoctors.set(false);
         },
         error: () => {
@@ -235,31 +159,13 @@ export class PatientBookingComponent {
       });
   }
 
-  private loadAvailability(doctorId: number): void {
-    this.isLoadingAvailability.set(true);
-    this.appointmentsService
-      .listDoctorAvailability(doctorId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (slots) => {
-          this.availability.set(slots);
-          this.isLoadingAvailability.set(false);
-          this.loadAvailableBlocks(doctorId);
-        },
-        error: () => {
-          this.toastService.error('No pudimos cargar la disponibilidad de este profesional.');
-          this.isLoadingAvailability.set(false);
-        }
-      });
-  }
-
-  private loadAvailableBlocks(doctorId: number): void {
+  private loadAvailabilityForDoctor(doctorId: number): void {
     this.isLoadingBlocks.set(true);
     
-    // Get blocks for the next 30 days
+    // Get blocks for the next 60 days
     const startDate = new Date();
     const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 30);
+    endDate.setDate(endDate.getDate() + 60);
     
     this.appointmentsService
       .getAvailableBlocks(
@@ -270,25 +176,21 @@ export class PatientBookingComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (blocks) => {
-          this.availableBlocks.set(blocks);
-          
-          // Update doctor availability map using the selected doctor from form
-          const doctorId = this.selectedDoctorId();
-          if (doctorId) {
-            const availabilityMap = new Map<number, number>();
-            availabilityMap.set(doctorId, blocks.length);
-            this.doctorAvailabilityMap.set(availabilityMap);
-          }
-          
+          // Filter out past blocks
+          const futureBlocks = blocks.filter(block => 
+            new Date(block.startAt) > this.now
+          );
+          this.availableBlocks.set(futureBlocks);
           this.isLoadingBlocks.set(false);
         },
         error: () => {
           this.isLoadingBlocks.set(false);
-          console.error('Error loading available blocks');
+          this.toastService.error('No pudimos cargar la disponibilidad del profesional.');
         }
       });
   }
 
+  // Utility methods
   formatDateSpanish(dateString: string): string {
     return this.dateFormatService.formatDayMonth(dateString);
   }
@@ -297,12 +199,90 @@ export class PatientBookingComponent {
     return this.dateFormatService.formatTime(dateString);
   }
 
-  private loadAllDoctorsAvailability(doctors: DoctorDto[]): void {
-    // Initialize availability map for all doctors
+  getSelectedDayBlocks(): AppointmentBlockDto[] {
+    const selectedDay = this.selectedCalendarDay();
+    if (!selectedDay) return [];
+
+    return this.availableBlocks()
+      .filter(block => {
+        const blockDate = new Date(block.startAt).toDateString();
+        return blockDate === selectedDay.date.toDateString();
+      })
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }
+
+  isBlockInPast(block: AppointmentBlockDto): boolean {
+    return new Date(block.startAt) <= this.now;
+  }
+
+  // Enhanced helper methods for better UX
+  getAvailableSlotsForDay(date: Date): AppointmentBlockDto[] {
+    const dateKey = date.toDateString();
+    return this.availableBlocks().filter(block => {
+      const blockDateKey = new Date(block.startAt).toDateString();
+      return blockDateKey === dateKey;
+    }).sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  }
+
+  getFirstAvailableDay(): Date | null {
+    const blocks = this.availableBlocks();
+    if (blocks.length === 0) return null;
+    
+    const sortedBlocks = blocks.sort((a, b) =>
+      new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+    );
+    return new Date(sortedBlocks[0].startAt);
+  }
+
+  navigateToNextAvailableDay(): void {
+    const firstAvailable = this.getFirstAvailableDay();
+    if (firstAvailable) {
+      // Set the calendar to show the month of the first available day
+      const calendar = document.querySelector('app-shared-calendar');
+      if (calendar) {
+        // This would need to be implemented in the calendar component itself
+        console.log('Navigate to next available day:', firstAvailable);
+      }
+    }
+  }
+
+  getQuickAvailabilitySummary(): { today: number; week: number; month: number } {
+    const now = new Date();
+    const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const monthFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const today = this.availableBlocks().filter(block => {
+      const blockDate = new Date(block.startAt);
+      return blockDate.toDateString() === now.toDateString();
+    }).length;
+
+    const week = this.availableBlocks().filter(block => {
+      const blockDate = new Date(block.startAt);
+      return blockDate >= now && blockDate <= weekFromNow;
+    }).length;
+
+    const month = this.availableBlocks().filter(block => {
+      const blockDate = new Date(block.startAt);
+      return blockDate >= now && blockDate <= monthFromNow;
+    }).length;
+
+    return { today, week, month };
+  }
+
+  getDoctorAvailabilityMap(): Map<number, number> {
     const availabilityMap = new Map<number, number>();
-    doctors.forEach(doctor => {
-      availabilityMap.set(doctor.id, 0);
-    });
-    this.doctorAvailabilityMap.set(availabilityMap);
+    
+    // For now, since we're only showing availability for the selected doctor,
+    // we'll set the availability for the selected doctor only
+    const selectedDoctor = this.selectedDoctor();
+    if (selectedDoctor) {
+      // Count all available blocks for the selected doctor
+      availabilityMap.set(selectedDoctor.id, this.availableBlocks().length);
+    }
+    
+    // In the future, this could be enhanced to show availability for all doctors
+    // by fetching availability data for each doctor in the doctors list
+    
+    return availabilityMap;
   }
 }

@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 
 from app.controllers.appointments import (
@@ -9,6 +12,7 @@ from app.controllers.appointments import (
     list_availability,
     list_doctor_appointments,
     list_patient_appointments,
+    list_patient_appointments_filtered,
     update_availability,
 )
 from app.schemas.appointment import (
@@ -29,6 +33,23 @@ def route_list_patient_appointments(patient_id: int):
         return list_patient_appointments(patient_id)
     except HTTPException:
         raise
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get("/patients/{patient_id}/filtered", response_model=list[Appointment])
+def route_list_patient_appointments_filtered(
+    patient_id: int,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    try:
+        start_dt = datetime.fromisoformat(start_date) if start_date else None
+        end_dt = datetime.fromisoformat(end_date) if end_date else None
+        
+        return list_patient_appointments_filtered(patient_id, start_dt, end_dt)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use ISO format: YYYY-MM-DDTHH:MM:SS") from exc
     except Exception as exc:  # pragma: no cover - defensive
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

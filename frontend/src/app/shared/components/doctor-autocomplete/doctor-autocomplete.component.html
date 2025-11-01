@@ -1,0 +1,195 @@
+<div class="doctor-autocomplete">
+  <!-- Label -->
+  <label for="doctor-search" class="field-label">{{ label }}</label>
+  
+  <!-- Search Input Container -->
+  <div class="search-container">
+    <div class="input-wrapper" [class.focused]="isDropdownOpen()">
+      <input
+        id="doctor-search"
+        type="text"
+        class="input search-input"
+        [placeholder]="placeholder"
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+        (focus)="isDropdownOpen.set(true)"
+        (blur)="closeDropdown()"
+        [disabled]="loading"
+      />
+      
+      @if (selectedDoctor) {
+        <button
+          type="button"
+          class="clear-btn"
+          (click)="clearSelection()"
+          title="Limpiar selección"
+        >
+          ✕
+        </button>
+      } @else {
+        <div class="search-icon">🔍</div>
+      }
+    </div>
+
+    <!-- Loading Indicator -->
+    @if (loading) {
+      <div class="loading-indicator">
+        <div class="loading-spinner"></div>
+      </div>
+    }
+  </div>
+
+  <!-- Dropdown Results -->
+  @if (isDropdownOpen()) {
+    <div class="dropdown">
+      @if (loading) {
+        <div class="dropdown-loading">
+          <div class="loading-spinner"></div>
+          <p>Cargando profesionales...</p>
+        </div>
+      } @else if (hasSearchResults()) {
+        <div class="search-results">
+          @for (doctor of filteredDoctors(); track doctor.id) {
+            <div
+              class="doctor-option"
+              [class.selected]="isSelectedDoctor(doctor)"
+              (click)="selectDoctor(doctor)"
+              (mousedown)="$event.preventDefault()"
+            >
+              <div class="doctor-info">
+                <div class="doctor-avatar">
+                  <span class="avatar-initials">
+                    {{ getDoctorInitials(doctor) }}
+                  </span>
+                </div>
+                
+                <div class="doctor-details">
+                  <h5 class="doctor-name">
+                    {{ getDoctorDisplayName(doctor) }}
+                    @if (hasDoctorAvailability(doctor)) {
+                      <span class="availability-indicator" [class]="getAvailabilityClass(doctor)">
+                        {{ getAvailabilityIndicator(doctor) }}
+                      </span>
+                    }
+                  </h5>
+                  
+                  @if (showSpecialties && getDoctorSpecialty(doctor) !== 'Sin especialidad') {
+                    <p class="doctor-specialty">{{ getDoctorSpecialty(doctor) }}</p>
+                  }
+
+                  @if (hasDoctorAvailability(doctor)) {
+                    <p class="availability-count">
+                      {{ getDoctorAvailabilityCount(doctor) }} turno(s) disponible(s)
+                    </p>
+                  } @else {
+                    <p class="no-availability">Sin disponibilidad</p>
+                  }
+                </div>
+              </div>
+
+              @if (isSelectedDoctor(doctor)) {
+                <div class="selection-indicator">✓</div>
+              }
+            </div>
+          }
+        </div>
+      } @else if (searchTerm().trim().length > 0) {
+        <div class="no-results">
+          <div class="empty-icon">👨‍⚕️</div>
+          <h5>No se encontraron profesionales</h5>
+          <p>Probá con otros términos de búsqueda.</p>
+        </div>
+      } @else {
+        <div class="default-list">
+          <div class="dropdown-header">
+            <p>Seleccioná un profesional para ver su disponibilidad</p>
+          </div>
+          
+          @if (filteredDoctors().length > 0) {
+            <div class="search-results">
+              @for (doctor of filteredDoctors(); track doctor.id) {
+                <div
+                  class="doctor-option"
+                  [class.selected]="isSelectedDoctor(doctor)"
+                  (click)="selectDoctor(doctor)"
+                  (mousedown)="$event.preventDefault()"
+                >
+                  <div class="doctor-info">
+                    <div class="doctor-avatar">
+                      <span class="avatar-initials">
+                        {{ getDoctorInitials(doctor) }}
+                      </span>
+                    </div>
+                    
+                    <div class="doctor-details">
+                      <h5 class="doctor-name">
+                        {{ getDoctorDisplayName(doctor) }}
+                        @if (hasDoctorAvailability(doctor)) {
+                          <span class="availability-indicator" [class]="getAvailabilityClass(doctor)">
+                            {{ getAvailabilityIndicator(doctor) }}
+                          </span>
+                        }
+                      </h5>
+                      
+                      @if (showSpecialties && getDoctorSpecialty(doctor) !== 'Sin especialidad') {
+                        <p class="doctor-specialty">{{ getDoctorSpecialty(doctor) }}</p>
+                      }
+    
+                      @if (hasDoctorAvailability(doctor)) {
+                        <p class="availability-count">
+                          {{ getDoctorAvailabilityCount(doctor) }} turno(s) disponible(s)
+                        </p>
+                      } @else {
+                        <p class="no-availability">Sin disponibilidad</p>
+                      }
+                    </div>
+                  </div>
+    
+                  @if (isSelectedDoctor(doctor)) {
+                    <div class="selection-indicator">✓</div>
+                  }
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="no-doctors">
+              <div class="empty-icon">👨‍⚕️</div>
+              <h5>No hay profesionales disponibles</h5>
+              <p>En este momento no hay profesionales en el sistema.</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Selected Doctor Display -->
+  @if (selectedDoctor && !isDropdownOpen()) {
+    <div class="selected-doctor-display">
+      <div class="doctor-info">
+        <div class="doctor-avatar">
+          <span class="avatar-initials">
+            {{ getDoctorInitials(selectedDoctor) }}
+          </span>
+        </div>
+        
+        <div class="doctor-details">
+          <h5 class="doctor-name">{{ getDoctorDisplayName(selectedDoctor) }}</h5>
+          
+          @if (showSpecialties && getDoctorSpecialty(selectedDoctor) !== 'Sin especialidad') {
+            <p class="doctor-specialty">{{ getDoctorSpecialty(selectedDoctor) }}</p>
+          }
+        </div>
+      </div>
+      
+      <button
+        type="button"
+        class="change-btn"
+        (click)="toggleDropdown()"
+        title="Cambiar profesional"
+      >
+        Cambiar
+      </button>
+    </div>
+  }
+</div>
