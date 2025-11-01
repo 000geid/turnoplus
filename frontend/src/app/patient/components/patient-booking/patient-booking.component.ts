@@ -98,8 +98,12 @@ export class PatientBookingComponent {
           this.isBooking.set(false);
           this.message.set('¡Turno reservado con éxito!');
           this.booked.emit(appointment);
-          this.loadAvailability(doctor.id);
-          this.loadAvailableBlocks(doctor.id);
+          
+          // Add a small delay to ensure backend has committed the transaction
+          setTimeout(() => {
+            this.loadAvailability(doctor.id);
+            this.loadAvailableBlocks(doctor.id);
+          }, 500);
         },
         error: () => {
           this.isBooking.set(false);

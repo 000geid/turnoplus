@@ -1,4 +1,4 @@
-.user-management {
+.doctor-management {
   padding: var(--space-6);
 
   &__header {
@@ -17,15 +17,15 @@
   }
 }
 
-// Enhanced user list with proper spacing
-.user-list {
+// Enhanced doctor list with consistent spacing
+.doctor-list {
   display: grid;
   gap: var(--space-6);
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
 }
 
-// Redesigned user card with strong contrast and clear hierarchy
-.user-card {
+// Redesigned doctor card with strong contrast and clear hierarchy
+.doctor-card {
   background: var(--color-surface);
   border: 2px solid var(--color-border);
   border-radius: var(--space-2);
@@ -53,6 +53,15 @@
     align-items: flex-start;
     margin-bottom: var(--space-4);
     gap: var(--space-3);
+
+    h3 {
+      margin: 0;
+      color: var(--color-text-primary);
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      line-height: var(--line-height-tight);
+      word-break: break-word;
+    }
   }
 
   &__details {
@@ -83,42 +92,8 @@
   }
 }
 
-// Enhanced user info section with better visual hierarchy
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 0; // Allow to shrink
-
-  .user-icon {
-    color: var(--color-primary);
-    font-size: var(--font-size-xl);
-    padding: var(--space-2);
-    background: var(--color-primary-light);
-    border-radius: var(--space-1);
-  }
-
-  h3 {
-    margin: 0;
-    color: var(--color-text-primary);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-semibold);
-    line-height: var(--line-height-tight);
-    word-break: break-word;
-  }
-
-  .user-role {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    background: var(--color-secondary-light);
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--space-1);
-  }
-}
-
 // Status badges with high contrast
-.user-status {
+.doctor-status {
   padding: var(--space-1) var(--space-3);
   border-radius: var(--space-1);
   font-size: var(--font-size-xs);
@@ -136,16 +111,43 @@
   }
 }
 
-// Typography styling for better hierarchy
-.user-email {
+// Enhanced typography with clear hierarchy
+.doctor-email {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary) !important;
   font-size: var(--font-size-sm);
 }
 
-.user-detail {
+.doctor-specialty {
+  color: var(--color-primary) !important;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-primary-light);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.doctor-license {
   color: var(--color-text-secondary) !important;
   font-size: var(--font-size-sm);
+}
+
+.doctor-experience {
+  color: var(--color-text-muted) !important;
+  font-size: var(--font-size-sm);
+}
+
+.doctor-office {
+  color: var(--color-text-primary) !important;
+  font-weight: var(--font-weight-medium);
+  background: var(--color-secondary-light);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 // Empty state with better visual appeal
@@ -247,7 +249,7 @@
   }
 }
 
-// Form styles with better spacing and hierarchy
+// Form styles with enhanced spacing and hierarchy
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -300,22 +302,6 @@
     margin-top: var(--space-1);
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
-  }
-}
-
-// Role-specific fields section
-.role-specific-fields {
-  margin: var(--space-6) 0;
-  padding: var(--space-4);
-  background: var(--color-secondary-light);
-  border: 1px solid var(--color-border);
-  border-radius: var(--space-2);
-
-  h4 {
-    margin: 0 0 var(--space-4) 0;
-    color: var(--color-text-primary);
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-semibold);
   }
 }
 
@@ -404,7 +390,7 @@
 
 // Responsive design improvements
 @media (max-width: 768px) {
-  .user-management {
+  .doctor-management {
     padding: var(--space-4);
 
     &__header {
@@ -414,11 +400,11 @@
     }
   }
 
-  .user-list {
+  .doctor-list {
     grid-template-columns: 1fr;
   }
 
-  .user-card {
+  .doctor-card {
     flex-direction: column;
     gap: var(--space-4);
 

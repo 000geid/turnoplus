@@ -125,6 +125,40 @@ class AppointmentsService:
         )
         self._session.add(appointment)
         self._session.flush()
+        
+        # Mark the corresponding block as booked
+        block = self._session.scalars(
+            select(AppointmentBlockModel)
+            .where(AppointmentBlockModel.availability_id == availability.id)
+            .where(AppointmentBlockModel.start_at == data.start_at)
+            .where(AppointmentBlockModel.end_at == data.end_at)
+            .where(AppointmentBlockModel.is_booked == False)
+        ).first()
+        
+        if block:
+            block.is_booked = True
+            # Set the relationship between appointment and block
+            appointment.block_id = block.id
+            logger.info(f"Marked block {block.id} as booked and linked to appointment {appointment.id}")
+        else:
+            logger.warning(f"No matching block found for appointment {appointment.id}")
+            # If no block found, we should still try to find any block in the time range
+            # This handles edge cases with timezone differences
+            block = self._session.scalars(
+                select(AppointmentBlockModel)
+                .where(AppointmentBlockModel.availability_id == availability.id)
+                .where(AppointmentBlockModel.start_at <= data.start_at)
+                .where(AppointmentBlockModel.end_at >= data.end_at)
+                .where(AppointmentBlockModel.is_booked == False)
+            ).first()
+            
+            if block:
+                block.is_booked = True
+                appointment.block_id = block.id
+                logger.info(f"Found and marked block {block.id} using range matching")
+        
+        # Commit the transaction to ensure changes are persisted
+        self._session.commit()
         logger.info(f"Created appointment with ID: {appointment.id}")
         return self._to_schema(appointment)
 
@@ -204,7 +238,7 @@ class AppointmentsService:
         import logging
         logger = logging.getLogger(__name__)
         
-        logger.info(f"Validating datetime range: start={start}, end={start}")
+        logger.info(f"Validating datetime range: start={start}, end={end}")
         
         # Check if start is before end
         if start >= end:
