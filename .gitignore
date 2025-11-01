@@ -23,4 +23,4 @@ backend/.env
 CLAUDE.MD
 out/
 CLAUDE.md
-.kilocode/mcp.json
+.kilocode/
