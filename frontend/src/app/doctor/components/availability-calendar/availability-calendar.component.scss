@@ -58,6 +58,11 @@
       color: var(--gray-600);
       text-transform: uppercase;
       letter-spacing: 0.025em;
+
+      &.weekend {
+        color: var(--gray-400);
+        background: var(--gray-50);
+      }
     }
   }
 
@@ -136,6 +141,26 @@
       
       &:not(.current-month) {
         background: var(--gray-25);
+      }
+    }
+
+    &.weekend {
+      background: var(--gray-50);
+      
+      .day-number {
+        color: var(--gray-400);
+      }
+
+      &:not(.current-month) {
+        background: var(--gray-25);
+        
+        .day-number {
+          color: var(--gray-300);
+        }
+      }
+
+      &.has-availability {
+        border-left: 3px solid var(--gray-400);
       }
     }
 

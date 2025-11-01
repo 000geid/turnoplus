@@ -38,9 +38,7 @@
       </label>
     </div>
 
-    @if (errorMessage) {
-      <p class="auth-card__error">{{ errorMessage }}</p>
-    }
+    <!-- Messages now handled by toast notifications -->
 
     <button class="btn btn-primary auth-card__submit" type="submit" [disabled]="isSubmitting">
       {{ isSubmitting ? 'Creando cuenta...' : 'Crear cuenta' }}

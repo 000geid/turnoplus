@@ -31,9 +31,7 @@
         <div class="history-tab">
           @if (loadingHistory()) {
             <p class="history-loading">Cargando historial...</p>
-          } @else if (historyError()) {
-            <p class="history-error">{{ historyError() }}</p>
-          } @else if (!patientHistory().length) {
+          } @else if (patientHistory().length === 0) {
             <p class="history-empty">
               Este paciente no tiene registros médicos aún.
             </p>
@@ -118,9 +116,7 @@
               </label>
             </div>
 
-            @if (saveError()) {
-              <p class="form-error">{{ saveError() }}</p>
-            }
+            <!-- Messages now handled by toast notifications -->
 
             <div class="form-actions">
               <button

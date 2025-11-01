@@ -9,6 +9,7 @@ import {
 import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import { ToastService } from '../shared/services/toast.service';
 import { AuthService } from '../core/services/auth.service';
 import { AppointmentsService } from '../core/services/appointments.service';
 import { MedicalRecordsService } from '../core/services/medical-records.service';
@@ -40,6 +41,7 @@ export class DoctorShellComponent {
   private readonly appointmentsService = inject(AppointmentsService);
   private readonly medicalRecordsService = inject(MedicalRecordsService);
   private readonly doctorsService = inject(DoctorsService);
+  private readonly toastService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly doctorId: number | null;
@@ -52,9 +54,7 @@ export class DoctorShellComponent {
 
   readonly appointmentsError = signal<string | null>(null);
   readonly availabilityError = signal<string | null>(null);
-  readonly availabilityMessage = signal<string | null>(null);
   readonly recordsError = signal<string | null>(null);
-  readonly recordsMessage = signal<string | null>(null);
   readonly patientsError = signal<string | null>(null);
 
   readonly isLoadingAppointments = signal<boolean>(false);
@@ -211,9 +211,7 @@ export class DoctorShellComponent {
   constructor() {
     const currentUser = this.authService.user();
     if (!currentUser || currentUser.role !== 'doctor') {
-      this.appointmentsError.set('No pudimos validar tu sesión de profesional.');
-      this.availabilityError.set('No pudimos validar tu sesión de profesional.');
-      this.recordsError.set('No pudimos validar tu sesión de profesional.');
+      this.toastService.error('No pudimos validar tu sesión de profesional.');
       this.doctorId = null;
       return;
     }
@@ -250,8 +248,7 @@ export class DoctorShellComponent {
       return;
     }
     this.isCreatingAvailability.set(true);
-    this.availabilityError.set(null);
-    this.availabilityMessage.set(null);
+    this.toastService.info('Creando disponibilidad...', { config: { duration: 0 } });
 
     this.appointmentsService
       .createAvailability({
@@ -268,7 +265,7 @@ export class DoctorShellComponent {
             )
           );
           this.isCreatingAvailability.set(false);
-          this.availabilityMessage.set('Disponibilidad agregada correctamente.');
+          this.toastService.success('Disponibilidad agregada correctamente.');
         },
         error: (error) => {
           this.isCreatingAvailability.set(false);
@@ -289,7 +286,7 @@ export class DoctorShellComponent {
             }
           }
           
-          this.availabilityError.set(errorMessage);
+          this.toastService.error(errorMessage);
         }
       });
   }
@@ -299,8 +296,7 @@ export class DoctorShellComponent {
       return;
     }
     this.availabilityMutationId.set(event.id);
-    this.availabilityError.set(null);
-    this.availabilityMessage.set(null);
+    this.toastService.info('Actualizando disponibilidad...', { config: { duration: 0 } });
 
     this.appointmentsService
       .updateAvailability(event.id, {})
@@ -313,11 +309,11 @@ export class DoctorShellComponent {
               .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
           );
           this.availabilityMutationId.set(null);
-          this.availabilityMessage.set('Actualizamos tu disponibilidad.');
+          this.toastService.success('Actualizamos tu disponibilidad.');
         },
         error: () => {
           this.availabilityMutationId.set(null);
-          this.availabilityError.set('No pudimos actualizar la disponibilidad.');
+          this.toastService.error('No pudimos actualizar la disponibilidad.');
         }
       });
   }
@@ -352,7 +348,7 @@ export class DoctorShellComponent {
         },
         error: () => {
           this.isLoadingAppointments.set(false);
-          this.appointmentsError.set('No pudimos obtener tus turnos programados.');
+          this.toastService.error('No pudimos obtener tus turnos programados.');
         }
       });
   }
@@ -381,7 +377,7 @@ export class DoctorShellComponent {
         },
         error: () => {
           this.isLoadingAvailability.set(false);
-          this.availabilityError.set('No pudimos cargar tu agenda disponible.');
+          this.toastService.error('No pudimos cargar tu agenda disponible.');
         }
       });
   }
@@ -410,7 +406,7 @@ export class DoctorShellComponent {
         },
         error: () => {
           this.isLoadingRecords.set(false);
-          this.recordsError.set('No pudimos obtener tus registros clínicos.');
+          this.toastService.error('No pudimos obtener tus registros clínicos.');
         }
       });
   }
@@ -435,7 +431,7 @@ export class DoctorShellComponent {
         },
         error: () => {
           this.isLoadingPatients.set(false);
-          this.patientsError.set('No pudimos obtener tus pacientes.');
+          this.toastService.error('No pudimos obtener tus pacientes.');
         }
       });
   }
@@ -448,8 +444,7 @@ export class DoctorShellComponent {
       return;
     }
     this.recordMutationId.set(recordId);
-    this.recordsError.set(null);
-    this.recordsMessage.set(null);
+    this.toastService.info('Actualizando registro...', { config: { duration: 0 } });
 
     this.medicalRecordsService
       .updateRecord(recordId, changes)
@@ -464,21 +459,18 @@ export class DoctorShellComponent {
               )
           );
           this.recordMutationId.set(null);
-          this.recordsMessage.set('Registro actualizado correctamente.');
+          this.toastService.success('Registro actualizado correctamente.');
         },
         error: () => {
           this.recordMutationId.set(null);
-          this.recordsError.set('No pudimos actualizar el registro.');
+          this.toastService.error('No pudimos actualizar el registro.');
         }
       });
   }
 
   private ensureDoctorSession(): boolean {
     if (!this.doctorId) {
-      this.appointmentsError.set('Reiniciá tu sesión para continuar.');
-      this.availabilityError.set('Reiniciá tu sesión para continuar.');
-      this.recordsError.set('Reiniciá tu sesión para continuar.');
-      this.patientsError.set('Reiniciá tu sesión para continuar.');
+      this.toastService.error('Reiniciá tu sesión para continuar.');
       return false;
     }
     return true;

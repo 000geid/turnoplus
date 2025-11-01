@@ -11,6 +11,7 @@ import {
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
 
+import { ToastService } from '../../../shared/services/toast.service';
 import { AvailabilityDto, AppointmentBlockDto } from '../../../core/models/appointment';
 import { AvailabilityCalendarComponent } from '../availability-calendar/availability-calendar.component';
 
@@ -53,6 +54,7 @@ export class DoctorAvailabilityComponent {
   @Output() update = new EventEmitter<DoctorAvailabilityUpdateEvent>();
 
   private readonly fb = inject(FormBuilder);
+  private readonly toastService = inject(ToastService);
 
   readonly formError = signal<string | null>(null);
   readonly viewMode = signal<'list' | 'calendar'>('calendar');
@@ -146,19 +148,27 @@ export class DoctorAvailabilityComponent {
 
   private setupTemplateWatcher(): void {
     this.form.get('template')?.valueChanges.subscribe(templateId => {
-      if (templateId && templateId !== 'custom') {
+      if (templateId) {
         const template = this.timeSlotTemplates.find(t => t.id === templateId);
-        if (template) {
+        if (template && templateId !== 'custom') {
+          // For pre-defined templates, use today's date
           const today = new Date().toISOString().split('T')[0];
           this.form.patchValue({
             date: today,
             start: template.startTime,
             end: template.endTime
           });
-          
-          // Clear any existing form errors when template changes
-          this.formError.set(null);
+        } else if (templateId === 'custom') {
+          // For custom template, keep existing values but allow editing
+          // Don't overwrite existing date/time selection
+          this.form.patchValue({
+            start: '',
+            end: ''
+          });
         }
+        
+        // Clear any existing form errors when template changes
+        this.formError.set(null);
       }
     });
   }
@@ -170,6 +180,7 @@ export class DoctorAvailabilityComponent {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toastService.error('Completá los campos requeridos.');
       this.formError.set('Completá los campos requeridos.');
       return;
     }
@@ -188,17 +199,29 @@ export class DoctorAvailabilityComponent {
     endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
 
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      this.toastService.error('Ingresá fechas válidas.');
       this.formError.set('Ingresá fechas válidas.');
       return;
     }
 
+    // Validate date is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (startDate < today) {
+      this.toastService.error('No podés seleccionar una fecha pasada.');
+      this.formError.set('No podés seleccionar una fecha pasada.');
+      return;
+    }
+
     if (endDate <= startDate) {
+      this.toastService.error('La hora de fin debe ser posterior a la de inicio.');
       this.formError.set('La hora de fin debe ser posterior a la de inicio.');
       return;
     }
 
     // Validate block alignment (start time must be on the hour)
     if (startDate.getMinutes() !== 0) {
+      this.toastService.error('El horario de inicio debe ser en punto (ej: 9:00, 10:00, 11:00).');
       this.formError.set('El horario de inicio debe ser en punto (ej: 9:00, 10:00, 11:00).');
       return;
     }
@@ -206,6 +229,7 @@ export class DoctorAvailabilityComponent {
     // Validate duration is multiple of 30 minutes
     const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
     if (durationMinutes % 30 !== 0) {
+      this.toastService.error('La duración debe ser múltiplo de 30 minutos.');
       this.formError.set('La duración debe ser múltiplo de 30 minutos.');
       return;
     }
@@ -213,11 +237,13 @@ export class DoctorAvailabilityComponent {
     // Check for overlapping availability
     const overlap = this.checkForOverlap(startDate, endDate);
     if (overlap) {
+      this.toastService.warning('Ya tenés disponibilidad en este horario. Elegí otro horario o fecha.');
       this.formError.set('Ya tenés disponibilidad en este horario. Elegí otro horario o fecha.');
       return;
     }
 
     this.formError.set(null);
+    this.toastService.success('Disponibilidad agregada correctamente.');
     this.create.emit({
       startAt: startDate.toISOString(),
       endAt: endDate.toISOString()
@@ -261,6 +287,10 @@ export class DoctorAvailabilityComponent {
     return this.form.get('template')?.value === 'custom';
   }
 
+  hasTemplateSelected(): boolean {
+    return !!this.form.get('template')?.value;
+  }
+
   setViewMode(mode: 'list' | 'calendar'): void {
     this.viewMode.set(mode);
   }
@@ -292,8 +322,11 @@ export class DoctorAvailabilityComponent {
   private initializeDefaultRange(): void {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
-    const startTime = new Date(now.getTime() + 60 * 60 * 1000);
-    const endTime = new Date(startTime.getTime() + 30 * 60 * 1000);
+    
+    // Set default to next full hour (9:00 AM)
+    const startTime = new Date();
+    startTime.setHours(9, 0, 0, 0);
+    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour later (10:00 AM)
 
     this.form.setValue({
       date: today,

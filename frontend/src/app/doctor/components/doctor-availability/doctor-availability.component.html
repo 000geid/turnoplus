@@ -54,17 +54,20 @@
     </div>
 
     <!-- Date and Time Selection -->
-    <div class="datetime-selection" *ngIf="form.get('template')?.value">
+    <div class="datetime-selection" *ngIf="hasTemplateSelected()">
+      <p class="doctor-availability__info">
+        💡 Elegí la fecha y hora deseada. Podés modificar cualquier horario según tus necesidades.
+      </p>
       <div class="doctor-availability__form-grid">
         <label>
           <span>Fecha</span>
           <input class="input" type="date" formControlName="date" />
         </label>
-        <label *ngIf="isCustomTemplate()">
+        <label>
           <span>Inicio</span>
           <input class="input" type="time" formControlName="start" />
         </label>
-        <label *ngIf="isCustomTemplate()">
+        <label>
           <span>Fin</span>
           <input class="input" type="time" formControlName="end" />
         </label>
@@ -91,13 +94,7 @@
     </div>
   </form>
 
-  @if (message) {
-    <p class="doctor-availability__message success">{{ message }}</p>
-  }
-
-  @if (error) {
-    <p class="doctor-availability__message error">{{ error }}</p>
-  }
+  <!-- Messages now handled by toast notifications -->
 
   @if (loading) {
     <p class="doctor-availability__placeholder">Cargando disponibilidad…</p>

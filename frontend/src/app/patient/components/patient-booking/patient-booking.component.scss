@@ -141,3 +141,53 @@
     }
   }
 }
+
+// View Toggle Styles
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.25rem;
+  background: var(--gray-100);
+  border-radius: 12px;
+  
+  .toggle-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    color: var(--gray-600);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      color: var(--brand-700);
+      background: rgba(14, 116, 144, 0.05);
+    }
+    
+    &.active {
+      background: var(--brand-50);
+      color: var(--brand-700);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(14, 116, 144, 0.1);
+    }
+  }
+}
+
+// No Doctor Selected State
+.no-doctor-selected {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: var(--gray-50);
+  border: 2px dashed var(--gray-300);
+  border-radius: 12px;
+  
+  p {
+    margin: 0;
+    color: var(--gray-600);
+    font-size: 1rem;
+  }
+}

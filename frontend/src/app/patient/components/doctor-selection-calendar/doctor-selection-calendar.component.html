@@ -1,0 +1,205 @@
+<div class="doctor-selection-calendar">
+  <!-- Header -->
+  <div class="selection-header">
+    <h3>Agendar Turno</h3>
+    <p>Seleccioná una fecha y profesional disponible</p>
+  </div>
+
+  <!-- Search and Filter Controls -->
+  <div class="selection-controls">
+    <!-- Specialty Filter -->
+    <div class="specialty-filter">
+      <label for="specialty-select" class="field-label">Especialidad:</label>
+      <select 
+        id="specialty-select" 
+        class="input specialty-select" 
+        [(ngModel)]="selectedSpecialty"
+        (change)="onSpecialtyChange()"
+      >
+        <option value="">Todas las especialidades</option>
+        @for (specialty of uniqueSpecialties(); track specialty) {
+          <option [value]="specialty">{{ specialty }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Search Input -->
+    <div class="search-input">
+      <label for="doctor-search" class="field-label">Buscar:</label>
+      <input
+        id="doctor-search"
+        type="text"
+        class="input"
+        placeholder="Nombre del profesional..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+      />
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoadingDoctors) {
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Cargando profesionales...</p>
+    </div>
+  } @else {
+    <!-- Doctors Grid View -->
+    <div class="doctors-grid">
+      @if (filteredDoctors().length === 0) {
+        <div class="no-doctors-state">
+          <div class="empty-icon">👨‍⚕️</div>
+          <h5>No hay profesionales disponibles</h5>
+          <p>En este momento no hay profesionales con horarios disponibles. Probá con otros filtros de búsqueda.</p>
+        </div>
+      } @else {
+        @for (doctor of filteredDoctors(); track doctor.id) {
+          <div 
+            class="doctor-card"
+            [class.selected]="isDoctorSelected(doctor.id)"
+            [class.has-availability]="hasDoctorAvailability(doctor.id)"
+            (click)="selectDoctor(doctor)"
+          >
+            <div class="doctor-info">
+              <div class="doctor-avatar">
+                <span class="avatar-initials">
+                  {{ getDoctorInitials(doctor) }}
+                </span>
+              </div>
+              
+              <div class="doctor-details">
+                <h5 class="doctor-name">{{ doctor.full_name || doctor.email }}</h5>
+                
+                @if (doctor.specialty) {
+                  <p class="doctor-specialty">{{ doctor.specialty }}</p>
+                }
+              </div>
+            </div>
+
+            @if (isDoctorSelected(doctor.id)) {
+              <div class="selection-indicator">✓</div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Calendar View Toggle -->
+    <div class="view-toggle">
+      <button
+        type="button"
+        class="toggle-btn"
+        [class.active]="viewMode() === 'calendar'"
+        (click)="onViewModeChange('calendar')"
+      >
+        📅 Calendario
+      </button>
+      <button
+        type="button"
+        class="toggle-btn"
+        [class.active]="viewMode() === 'grid'"
+        (click)="onViewModeChange('grid')"
+      >
+        👥 Lista
+      </button>
+    </div>
+
+    <!-- Calendar View -->
+    @if (viewMode() === 'calendar') {
+      <div class="calendar-view">
+        <div class="calendar-header">
+          <button type="button" class="btn btn-secondary" (click)="previousMonth()" [disabled]="isLoadingDoctors">
+            <span class="icon">‹</span>
+          </button>
+          <h4 class="calendar-title">{{ monthName() }}</h4>
+          <button type="button" class="btn btn-secondary" (click)="nextMonth()" [disabled]="isLoadingDoctors">
+            <span class="icon">›</span>
+          </button>
+        </div>
+
+        <div class="calendar-grid">
+          <!-- Day Headers -->
+          <div class="day-headers">
+            <div class="day-header">Lun</div>
+            <div class="day-header">Mar</div>
+            <div class="day-header">Mié</div>
+            <div class="day-header">Jue</div>
+            <div class="day-header">Vie</div>
+            <div class="day-header weekend">Sáb</div>
+            <div class="day-header weekend">Dom</div>
+          </div>
+
+          <!-- Calendar Days -->
+          <div class="calendar-days">
+            @for (day of calendarDays(); track day.date.toISOString()) {
+              <div
+                class="calendar-day"
+                [class.current-month]="day.isCurrentMonth"
+                [class.today]="day.isToday"
+                [class.has-doctors]="getDoctorsForDay(day).length > 0"
+                [class.has-availability]="hasDayAvailability(day)"
+              >
+                <div class="day-number">{{ day.date.getDate() }}</div>
+                
+                @if (getDoctorsForDay(day).length > 0) {
+                  <div class="day-doctors">
+                    <div class="doctor-count">
+                      {{ getDoctorsForDay(day).length }} 
+                      @if (getDoctorsForDay(day).length === 1) {
+                        profesional
+                      } @else {
+                        profesionales
+                      }
+                    </div>
+                    
+                    <!-- Show first 2 doctors' initials -->
+                    @for (doctor of getDoctorsForDay(day).slice(0, 2); track doctor.id) {
+                      <div class="doctor-avatar-small">
+                        {{ getDoctorInitials(doctor) }}
+                      </div>
+                    }
+                    
+                    @if (getDoctorsForDay(day).length > 2) {
+                      <div class="more-indicator">+{{ getDoctorsForDay(day).length - 2 }}</div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Selected Day Doctors -->
+        @if (selectedDate() && getDoctorsForSelectedDate().length > 0) {
+          <div class="selected-day-doctors">
+            <h5>Profesionales disponibles para {{ selectedDate() | date: 'EEEE d MMMM' }}</h5>
+            <div class="day-doctors-grid">
+              @for (doctor of getDoctorsForSelectedDate(); track doctor.id) {
+                <div 
+                  class="doctor-card compact"
+                  [class.selected]="isDoctorSelected(doctor.id)"
+                  (click)="selectDoctor(doctor)"
+                >
+                  <div class="doctor-info">
+                    <div class="doctor-avatar">
+                      <span class="avatar-initials">{{ getDoctorInitials(doctor) }}</span>
+                    </div>
+                    <div class="doctor-details">
+                      <h6 class="doctor-name">{{ doctor.full_name || doctor.email }}</h6>
+                      @if (doctor.specialty) {
+                        <p class="doctor-specialty">{{ doctor.specialty }}</p>
+                      }
+                    </div>
+                  </div>
+                  @if (isDoctorSelected(doctor.id)) {
+                    <div class="selection-indicator">✓</div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

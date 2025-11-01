@@ -6,66 +6,91 @@
     </div>
   </header>
 
-  @if (error()) {
-    <p class="patient-booking__error">{{ error() }}</p>
-  }
+  <!-- Messages now handled by toast notifications -->
 
-  @if (message()) {
-    <p class="patient-booking__message">{{ message() }}</p>
-  }
+  <!-- Doctor Selection Calendar -->
+  <app-doctor-selection-calendar
+    [doctors]="doctors()"
+    [selectedDoctorId]="selectedDoctorId()"
+    [isLoadingDoctors]="isLoadingDoctors()"
+    [doctorAvailabilityMap]="doctorAvailabilityMap()"
+    (doctorSelected)="onDoctorSelected($event)"
+    (viewModeChanged)="onViewModeChanged($event)"
+  />
 
-  <form class="patient-booking__form" [formGroup]="selectionForm">
-    <label class="field">
-      <span>Profesional</span>
-      <select class="input" formControlName="doctorId" [disabled]="isLoadingDoctors() || isBooking()">
-        @if (isLoadingDoctors()) {
-          <option value="">Cargando profesionales…</option>
-        } @else {
-          <option value="">Seleccioná un profesional</option>
-          @for (doctor of doctors(); track doctor.id) {
-            <option [value]="doctor.id">
-              {{ doctor.full_name || doctor.email }}
-            </option>
-          }
-        }
-      </select>
-    </label>
-  </form>
-
-  @if (isLoadingAvailability()) {
-    <p class="patient-booking__placeholder">Buscando turnos disponibles…</p>
-  } @else if (isLoadingBlocks()) {
-    <p class="patient-booking__placeholder">Cargando bloques disponibles…</p>
-  } @else if (!availableBlocks().length) {
-    <p class="patient-booking__placeholder">
-      Este profesional no tiene bloques de turnos disponibles por ahora. Probá con otro horario o profesional.
-    </p>
-  } @else {
-    <div class="blocks-section">
-      <h4>Bloques de turnos disponibles</h4>
-      <div class="blocks-grid">
-        @for (block of availableBlocks(); track block.id) {
-          <div class="block-card">
-            <div class="block-info">
-              <h5>{{ block.startAt | date: 'EEEE d MMMM' }}</h5>
-              <p class="time-range">
-                {{ block.startAt | date: 'HH:mm' }} - {{ block.endAt | date: 'HH:mm' }} hs
-              </p>
-              <p class="block-status available">
-                Disponible
-              </p>
-            </div>
-            <button
-              type="button"
-              class="btn btn-primary"
-              (click)="bookBlock(block)"
-              [disabled]="isBooking()"
-            >
-              {{ isBooking() ? 'Reservando…' : 'Reservar' }}
-            </button>
-          </div>
-        }
-      </div>
+  <!-- View Toggle -->
+  @if (selectedDoctor()) {
+    <div class="view-toggle">
+      <button
+        type="button"
+        class="toggle-btn"
+        [class.active]="viewMode() === 'list'"
+        (click)="onViewModeChange('list')"
+      >
+        📋 Lista
+      </button>
+      <button
+        type="button"
+        class="toggle-btn"
+        [class.active]="viewMode() === 'calendar'"
+        (click)="onViewModeChange('calendar')"
+      >
+        📅 Calendario
+      </button>
     </div>
+  }
+
+  <!-- Content based on view mode -->
+  @if (viewMode() === 'list') {
+    @if (isLoadingAvailability()) {
+      <p class="patient-booking__placeholder">Buscando turnos disponibles…</p>
+    } @else if (isLoadingBlocks()) {
+      <p class="patient-booking__placeholder">Cargando bloques disponibles…</p>
+    } @else if (!availableBlocks().length) {
+      <p class="patient-booking__placeholder">
+        Este profesional no tiene bloques de turnos disponibles por ahora. Probá con otro horario o profesional.
+      </p>
+    } @else {
+      <div class="blocks-section">
+        <h4>Bloques de turnos disponibles</h4>
+        <div class="blocks-grid">
+          @for (block of availableBlocks(); track block.id) {
+            <div class="block-card">
+              <div class="block-info">
+                <h5>{{ formatDateSpanish(block.startAt) }}</h5>
+                <p class="time-range">
+                  {{ formatTimeSpanish(block.startAt) }} - {{ formatTimeSpanish(block.endAt) }} hs
+                </p>
+                <p class="block-status available">
+                  Disponible
+                </p>
+              </div>
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="bookBlock(block)"
+                [disabled]="isBooking()"
+              >
+                {{ isBooking() ? 'Reservando…' : 'Reservar' }}
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  } @else if (viewMode() === 'calendar') {
+    @if (selectedDoctor()) {
+      <app-patient-availability-calendar
+        [doctors]="doctors()"
+        [selectedDoctorId]="selectedDoctorId()"
+        [loading]="isLoadingBlocks()"
+        (doctorChanged)="onCalendarDoctorChange($event)"
+        (appointmentBlockSelected)="onCalendarAppointmentBlockSelected($event)"
+      />
+    } @else {
+      <div class="no-doctor-selected">
+        <p>Seleccioná un profesional para ver su calendario</p>
+      </div>
+    }
   }
 </section>

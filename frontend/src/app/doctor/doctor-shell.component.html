@@ -130,7 +130,6 @@
       [createPending]="isCreatingAvailability()"
       [mutationId]="availabilityMutationId()"
       [error]="availabilityError()"
-      [message]="availabilityMessage()"
       [doctorName]="doctorName()"
       (refresh)="refreshAvailability()"
       (create)="onCreateAvailability($event)"
@@ -147,9 +146,7 @@
         </div>
       </header>
 
-      @if (appointmentsError()) {
-        <p class="error-message">{{ appointmentsError() }}</p>
-      }
+      <!-- Messages now handled by toast notifications -->
 
       @if (isLoadingAppointments() && !sortedAppointments().length) {
         <p class="placeholder">Cargando turnos…</p>
@@ -188,7 +185,6 @@
       [saving]="isSavingRecord()"
       [mutationId]="recordMutationId()"
       [error]="recordsError() || patientsError()"
-      [message]="recordsMessage()"
       [doctorId]="doctorId"
       (refresh)="refreshRecords(); refreshPatients()"
       (updateRecord)="onUpdateRecord($event)"

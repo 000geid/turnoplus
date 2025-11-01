@@ -159,4 +159,9 @@ export class AvailabilityCalendarComponent {
   getIsPastDay(day: CalendarDay): boolean {
     return day.date < this.now;
   }
+
+  isWeekend(day: CalendarDay): boolean {
+    const dayOfWeek = day.date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
+  }
 }

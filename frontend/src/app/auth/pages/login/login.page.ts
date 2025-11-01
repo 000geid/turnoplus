@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
+import { ToastService } from '../../../shared/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { UserRole } from '../../../core/models/user';
 
@@ -16,6 +17,7 @@ import { UserRole } from '../../../core/models/user';
 export class LoginPage {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly form = this.fb.nonNullable.group({
@@ -24,26 +26,26 @@ export class LoginPage {
     role: 'patient' as UserRole
   });
 
-  errorMessage = '';
   isSubmitting = false;
 
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toastService.error('Por favor, completá todos los campos correctamente.');
       return;
     }
-    this.errorMessage = '';
     this.isSubmitting = true;
 
     const { email, password, role } = this.form.getRawValue();
     this.authService.login(role, { email, password }).subscribe({
       next: () => {
         this.isSubmitting = false;
+        this.toastService.success('¡Bienvenido de vuelta!');
         this.navigateByRole(role);
       },
       error: () => {
         this.isSubmitting = false;
-        this.errorMessage = 'Credenciales inválidas. Intentá nuevamente.';
+        this.toastService.error('Credenciales inválidas. Intentá nuevamente.');
       }
     });
   }

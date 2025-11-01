@@ -9,9 +9,7 @@
     </button>
   </header>
 
-  @if (error) {
-    <p class="patient-records__error">{{ error }}</p>
-  }
+  <!-- Messages now handled by toast notifications -->
 
   @if (loading && !records.length) {
     <p class="patient-records__placeholder">Cargando tu historial…</p>
@@ -25,7 +23,7 @@
             <h4>{{ record.diagnosis || 'Consulta sin diagnóstico' }}</h4>
             <div class="patient-records__meta">
               <span class="patient-records__date">
-                Atendido el {{ record.created_at | date: 'd/M/yyyy' }}
+                Atendido el {{ formatDateSpanish(record.created_at) }}
               </span>
               @if (record.doctor_name) {
                 <span class="patient-records__doctor">
@@ -33,7 +31,7 @@
                 </span>
               }
               <span class="patient-records__updated">
-                Actualizado el {{ record.updated_at | date: 'd/M/yy HH:mm' }}
+                Actualizado el {{ formatDateTimeSpanish(record.updated_at) }}
               </span>
             </div>
           </header>

@@ -17,10 +17,10 @@
       @for (item of appointments; track item.id) {
         <li class="patient-appointments__item">
           <div class="patient-appointments__summary">
-            <h4>Turno con profesional #{{ item.doctor_id }}</h4>
+            <h4>Turno con {{ getDoctorName(item.doctor_id) }}</h4>
             <p>
-              {{ item.startAt | date: 'EEEE d MMMM, HH:mm' }} -
-              {{ item.endAt | date: 'HH:mm' }}
+              {{ formatDateSpanish(item.startAt) }}, {{ formatTimeSpanish(item.startAt) }} -
+              {{ formatTimeSpanish(item.endAt) }}
             </p>
           </div>
 
