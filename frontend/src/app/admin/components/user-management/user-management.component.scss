@@ -26,13 +26,14 @@
 
 // Redesigned user card with strong contrast and clear hierarchy
 .user-card {
+  position: relative;
   background: var(--color-surface);
   border: 2px solid var(--color-border);
   border-radius: var(--space-2);
   padding: var(--space-6);
+  padding-bottom: calc(var(--space-6) + 44px);
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
   gap: var(--space-4);
   transition: all 0.2s ease;
 
@@ -43,26 +44,29 @@
   }
 
   &__content {
-    flex: 1;
-    min-width: 0; // Allow content to shrink
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-height: 100%;
   }
 
   &__header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: var(--space-4);
     gap: var(--space-3);
   }
 
   &__details {
-    margin-bottom: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
 
     p {
       display: flex;
       align-items: center;
       gap: var(--space-2);
-      margin: var(--space-2) 0;
+      margin: 0;
       color: var(--color-text-secondary);
       font-size: var(--font-size-sm);
       line-height: var(--line-height-normal);
@@ -75,11 +79,36 @@
     }
   }
 
-  &__actions {
-    display: flex;
-    gap: var(--space-2);
-    flex-shrink: 0;
-    flex-direction: column;
+  &__edit-button {
+    position: absolute;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: var(--color-primary);
+      border-color: rgba(var(--color-primary-rgb), 0.4);
+      box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.15);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .material-icons {
+      font-size: var(--font-size-base);
+    }
   }
 }
 
@@ -419,16 +448,11 @@
   }
 
   .user-card {
-    flex-direction: column;
-    gap: var(--space-4);
+    padding-bottom: calc(var(--space-6) + 44px);
 
-    &__actions {
-      justify-content: stretch;
-      flex-direction: row;
-
-      .btn {
-        flex: 1;
-      }
+    &__edit-button {
+      right: var(--space-3);
+      bottom: var(--space-3);
     }
   }
 

@@ -1,12 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../../core/services/user.service';
 import { DoctorService, DoctorCreate, DoctorUpdate } from '../../../core/services/doctor.service';
 import { PatientsService } from '../../../core/services/patients.service';
 import { OfficeService } from '../../../core/services/office.service';
+import { ToastService } from '../../../shared/services/toast.service';
 import { UserDto, DoctorDto, PatientDto } from '../../../core/models/user';
 import { Office } from '../../../core/models/office';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { PaginationParams, PaginatedResponse, defaultPaginationParams } from '../../../core/models/pagination';
 
 export interface UserCreate {
   email: string;
@@ -53,7 +56,7 @@ export interface UserUpdate {
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationComponent],
   templateUrl: './user-management.component.html',
   styleUrls: ['./user-management.component.scss']
 })
@@ -62,6 +65,11 @@ export class UserManagementComponent implements OnInit {
   offices: Office[] = [];
   loading = false;
   error: string | null = null;
+  
+  // Pagination state
+  pagination: PaginationParams = { ...defaultPaginationParams };
+  totalUsers = 0;
+  totalPages = 1;
   
   // Form state
   showCreateForm = false;
@@ -82,7 +90,9 @@ export class UserManagementComponent implements OnInit {
     private userService: UserService,
     private doctorService: DoctorService,
     private patientService: PatientsService,
-    private officeService: OfficeService
+    private officeService: OfficeService,
+    private toastService: ToastService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -94,17 +104,34 @@ export class UserManagementComponent implements OnInit {
     this.loading = true;
     this.error = null;
     
-    // Load all types of users
+    // Load all types of users with pagination
     Promise.all([
-      this.userService.getUsers().toPromise(),
-      this.doctorService.getDoctors().toPromise(),
-      this.patientService.getPatients().toPromise()
-    ]).then(([users, doctors, patients]) => {
-      this.users = [
-        ...(users || []),
-        ...(doctors || []),
-        ...(patients || [])
-      ].sort((a, b) => a.full_name?.localeCompare(b.full_name || '') || 0);
+      this.userService.getUsersPaginated(this.pagination).toPromise(),
+      this.doctorService.getDoctorsPaginated(this.pagination).toPromise(),
+      this.patientService.getPatientsPaginated(this.pagination).toPromise()
+    ]).then(([usersResponse, doctorsResponse, patientsResponse]) => {
+      // Combine all users from different types
+      const allUsers = [
+        ...(usersResponse?.items || []),
+        ...(doctorsResponse?.items || []),
+        ...(patientsResponse?.items || [])
+      ];
+      
+      // Sort by name for consistent display
+      this.users = allUsers.sort((a, b) => 
+        a.full_name?.localeCompare(b.full_name || '') || 
+        a.email.localeCompare(b.email)
+      );
+      
+      // Calculate combined pagination info (approximate)
+      const totalFromResponses = [
+        usersResponse?.total || 0,
+        doctorsResponse?.total || 0,
+        patientsResponse?.total || 0
+      ];
+      this.totalUsers = totalFromResponses.reduce((a, b) => a + b, 0);
+      this.totalPages = Math.ceil(this.totalUsers / this.pagination.size);
+      
       this.loading = false;
     }).catch((err) => {
       this.error = 'Error al cargar usuarios';
@@ -122,6 +149,18 @@ export class UserManagementComponent implements OnInit {
         console.error('Error loading offices:', err);
       }
     });
+  }
+
+  // Pagination event handlers
+  onPageChange(page: number): void {
+    this.pagination.page = page;
+    this.loadUsers();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pagination.size = size;
+    this.pagination.page = 1; // Reset to first page
+    this.loadUsers();
   }
 
   showCreateUserForm(): void {
@@ -184,10 +223,13 @@ export class UserManagementComponent implements OnInit {
     this.showCreateForm = false;
     this.editingUser = null;
     this.resetForm();
+    // Force change detection to update the modal visibility
+    this.cdr.detectChanges();
   }
 
   onSubmit(): void {
-    if (!this.formData.email.trim() || !this.formData.password.trim()) {
+    if (!this.formData.email.trim() || (!this.editingUser && !this.formData.password.trim())) {
+      this.toastService.error('Email y contraseña son obligatorios');
       this.error = 'Email y contraseña son obligatorios';
       return;
     }
@@ -222,12 +264,16 @@ export class UserManagementComponent implements OnInit {
 
     serviceCall.subscribe({
       next: () => {
+        this.loading = false;
+        this.toastService.success(`${this.getRoleDisplayName(this.formData.role)} creado exitosamente`);
         this.loadUsers();
         this.cancelForm();
       },
       error: (err: any) => {
-        this.error = `Error al crear ${this.formData.role}`;
         this.loading = false;
+        const errorMessage = `Error al crear ${this.getRoleDisplayName(this.formData.role)}. Reintentá más tarde.`;
+        this.error = errorMessage;
+        this.toastService.error(errorMessage);
         console.error('Error creating user:', err);
       }
     });
@@ -283,12 +329,16 @@ export class UserManagementComponent implements OnInit {
 
     serviceCall.subscribe({
       next: () => {
+        this.loading = false;
+        this.toastService.success(`${this.getRoleDisplayName(this.formData.role)} actualizado correctamente`);
         this.loadUsers();
         this.cancelForm();
       },
       error: (err: any) => {
-        this.error = `Error al actualizar ${this.formData.role}`;
         this.loading = false;
+        const errorMessage = `Error al actualizar ${this.getRoleDisplayName(this.formData.role)}. Reintentá más tarde.`;
+        this.error = errorMessage;
+        this.toastService.error(errorMessage);
         console.error('Error updating user:', err);
       }
     });
@@ -321,11 +371,15 @@ export class UserManagementComponent implements OnInit {
 
     serviceCall.subscribe({
       next: () => {
+        this.loading = false;
+        this.toastService.success(`${this.getRoleDisplayName(user.role)} eliminado correctamente`);
         this.loadUsers();
       },
       error: (err: any) => {
-        this.error = `Error al eliminar ${user.role}`;
         this.loading = false;
+        const errorMessage = `Error al eliminar ${this.getRoleDisplayName(user.role)}. Reintentá más tarde.`;
+        this.error = errorMessage;
+        this.toastService.error(errorMessage);
         console.error('Error deleting user:', err);
       }
     });

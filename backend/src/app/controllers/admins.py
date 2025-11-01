@@ -1,5 +1,6 @@
 from app.db.broker import get_dbbroker
 from app.schemas.auth import AdminLoginResponse, LoginRequest
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Admin, AdminCreate, AdminUpdate
 from app.services.admins import AdminsService
 
@@ -9,6 +10,13 @@ def list_admins() -> list[Admin]:
     with broker.session() as session:
         svc = AdminsService(session)
         return svc.list()
+
+
+def list_admins_paginated(page: int = 1, size: int = 10) -> PaginatedResponse[Admin]:
+    broker = get_dbbroker()
+    with broker.session() as session:
+        svc = AdminsService(session)
+        return svc.list_paginated(page=page, size=size)
 
 
 def get_admin(admin_id: int) -> Admin | None:

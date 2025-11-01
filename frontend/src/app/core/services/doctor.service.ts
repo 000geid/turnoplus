@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../config/api.config';
-import { DoctorDto } from '../models/user';
+import { DoctorDto, PatientDto } from '../models/user';
+import { PaginationParams, PaginatedResponse } from '../models/pagination';
 
 export interface DoctorCreate {
   email: string;
@@ -40,6 +41,15 @@ export class DoctorService {
     return this.http.get<DoctorDto[]>(this.apiUrl);
   }
 
+  getDoctorsPaginated(params?: PaginationParams): Observable<PaginatedResponse<DoctorDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      httpParams = httpParams.set('page', params.page.toString());
+      httpParams = httpParams.set('size', params.size.toString());
+    }
+    return this.http.get<PaginatedResponse<DoctorDto>>(`${this.apiUrl}/paginated`, { params: httpParams });
+  }
+
   getDoctor(id: number): Observable<DoctorDto> {
     return this.http.get<DoctorDto>(`${this.apiUrl}/${id}`);
   }
@@ -54,5 +64,18 @@ export class DoctorService {
 
   deleteDoctor(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  getDoctorPatients(doctorId: number): Observable<PatientDto[]> {
+    return this.http.get<PatientDto[]>(`${this.apiUrl}/${doctorId}/patients`);
+  }
+
+  getDoctorPatientsPaginated(doctorId: number, params?: PaginationParams): Observable<PaginatedResponse<PatientDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      httpParams = httpParams.set('page', params.page.toString());
+      httpParams = httpParams.set('size', params.size.toString());
+    }
+    return this.http.get<PaginatedResponse<PatientDto>>(`${this.apiUrl}/${doctorId}/patients/paginated`, { params: httpParams });
   }
 }

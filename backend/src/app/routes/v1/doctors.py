@@ -1,16 +1,19 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.controllers.doctors import (
     create_doctor,
     delete_doctor,
     get_doctor,
     get_doctor_patients,
+    get_doctor_patients_paginated,
     login_doctor,
     list_doctors,
+    list_doctors_paginated,
     update_doctor,
 )
 from app.controllers.appointments import get_doctor_availability, get_available_blocks
 from app.schemas.auth import DoctorLoginResponse, LoginRequest
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Doctor, DoctorCreate, DoctorUpdate, Patient
 from app.schemas.appointment import AppointmentBlock
 
@@ -21,6 +24,14 @@ router = APIRouter()
 @router.get("/", response_model=list[Doctor])
 def route_list_doctors():
     return list_doctors()
+
+
+@router.get("/paginated", response_model=PaginatedResponse[Doctor])
+def route_list_doctors_paginated(
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, le=100, description="Items per page")
+):
+    return list_doctors_paginated(page=page, size=size)
 
 
 @router.get("/{doctor_id}", response_model=Doctor)
@@ -56,6 +67,18 @@ def route_update_doctor(doctor_id: int, data: DoctorUpdate):
 def route_get_doctor_patients(doctor_id: int):
     patients = get_doctor_patients(doctor_id)
     if not patients and get_doctor(doctor_id) is None:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    return patients
+
+
+@router.get("/{doctor_id}/patients/paginated", response_model=PaginatedResponse[Patient])
+def route_get_doctor_patients_paginated(
+    doctor_id: int,
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, le=100, description="Items per page")
+):
+    patients = get_doctor_patients_paginated(doctor_id, page=page, size=size)
+    if not patients.items and get_doctor(doctor_id) is None:
         raise HTTPException(status_code=404, detail="Doctor not found")
     return patients
 

@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../config/api.config';
 import { UserDto } from '../models/user';
+import { PaginationParams, PaginatedResponse } from '../models/pagination';
 
 export interface UserCreate {
   email: string;
@@ -32,6 +33,15 @@ export class UserService {
 
   getUsers(): Observable<UserDto[]> {
     return this.http.get<UserDto[]>(this.apiUrl);
+  }
+
+  getUsersPaginated(params?: PaginationParams): Observable<PaginatedResponse<UserDto>> {
+    let httpParams = new HttpParams();
+    if (params) {
+      httpParams = httpParams.set('page', params.page.toString());
+      httpParams = httpParams.set('size', params.size.toString());
+    }
+    return this.http.get<PaginatedResponse<UserDto>>(`${this.apiUrl}/paginated`, { params: httpParams });
   }
 
   getUser(id: number): Observable<UserDto> {

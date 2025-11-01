@@ -40,6 +40,7 @@
             {{ doctor.is_active ? 'Activo' : 'Inactivo' }}
           </span>
         </div>
+
         <div class="doctor-card__details">
           <p class="doctor-email">
             <i class="material-icons">email</i>
@@ -63,22 +64,15 @@
           </p>
         </div>
       </div>
-      <div class="doctor-card__actions">
-        <button 
-          class="btn btn-secondary btn-sm"
-          (click)="showEditDoctorForm(doctor)"
-          [disabled]="loading">
-          <i class="material-icons">edit</i>
-          Editar
-        </button>
-        <button 
-          class="btn btn-danger btn-sm"
-          (click)="deleteDoctor(doctor)"
-          [disabled]="loading">
-          <i class="material-icons">delete</i>
-          Eliminar
-        </button>
-      </div>
+
+      <button
+        class="doctor-card__edit-button"
+        type="button"
+        (click)="showEditDoctorForm(doctor)"
+        [disabled]="loading"
+        aria-label="Editar doctor">
+        <i class="material-icons">edit</i>
+      </button>
     </div>
   </div>
 
@@ -210,8 +204,17 @@
           <button type="button" class="btn btn-secondary" (click)="cancelForm()">
             Cancelar
           </button>
-          <button 
-            type="submit" 
+          <button
+            *ngIf="editingDoctor"
+            type="button"
+            class="btn btn-danger"
+            (click)="deleteDoctor(editingDoctor)"
+            [disabled]="loading">
+            <i class="material-icons">delete</i>
+            Eliminar
+          </button>
+          <button
+            type="submit"
             class="btn btn-primary"
             [disabled]="loading || !formData.email.trim() || (!editingDoctor && !formData.password.trim())">
             <i *ngIf="loading" class="material-icons">refresh</i>

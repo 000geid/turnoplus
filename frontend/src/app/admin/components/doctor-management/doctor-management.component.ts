@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DoctorService, DoctorCreate, DoctorUpdate } from '../../../core/services/doctor.service';
 import { OfficeService } from '../../../core/services/office.service';
+import { ToastService } from '../../../shared/services/toast.service';
 import { DoctorDto } from '../../../core/models/user';
 import { Office } from '../../../core/models/office';
 
@@ -38,7 +39,9 @@ export class DoctorManagementComponent implements OnInit {
 
   constructor(
     private doctorService: DoctorService,
-    private officeService: OfficeService
+    private officeService: OfficeService,
+    private toastService: ToastService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -120,14 +123,18 @@ export class DoctorManagementComponent implements OnInit {
       years_experience: 0,
       office_id: undefined
     };
+    // Force change detection to update the modal visibility
+    this.cdr.detectChanges();
   }
 
   onSubmit(): void {
     if (!this.formData.email.trim()) {
+      this.toastService.error('El email es obligatorio');
       this.error = 'El email es obligatorio';
       return;
     }
     if (!this.editingDoctor && !this.formData.password.trim()) {
+      this.toastService.error('La contraseña es obligatoria para nuevos usuarios');
       this.error = 'La contraseña es obligatoria para nuevos usuarios';
       return;
     }
@@ -156,12 +163,16 @@ export class DoctorManagementComponent implements OnInit {
 
       this.doctorService.updateDoctor(this.editingDoctor.id, updateData).subscribe({
         next: () => {
+          this.loading = false;
+          this.toastService.success('Doctor actualizado correctamente');
           this.loadDoctors();
           this.cancelForm();
         },
         error: (err) => {
-          this.error = 'Error al actualizar doctor';
           this.loading = false;
+          const errorMessage = 'Error al actualizar doctor. Reintentá más tarde.';
+          this.error = errorMessage;
+          this.toastService.error(errorMessage);
           console.error('Error updating doctor:', err);
         }
       });
@@ -169,12 +180,16 @@ export class DoctorManagementComponent implements OnInit {
       // Create new doctor
       this.doctorService.createDoctor(this.formData).subscribe({
         next: () => {
+          this.loading = false;
+          this.toastService.success('Doctor creado exitosamente');
           this.loadDoctors();
           this.cancelForm();
         },
         error: (err) => {
-          this.error = 'Error al crear doctor';
           this.loading = false;
+          const errorMessage = 'Error al crear doctor. Reintentá más tarde.';
+          this.error = errorMessage;
+          this.toastService.error(errorMessage);
           console.error('Error creating doctor:', err);
         }
       });
@@ -191,11 +206,15 @@ export class DoctorManagementComponent implements OnInit {
 
     this.doctorService.deleteDoctor(doctor.id).subscribe({
       next: () => {
+        this.loading = false;
+        this.toastService.success('Doctor eliminado correctamente');
         this.loadDoctors();
       },
       error: (err) => {
-        this.error = 'Error al eliminar doctor';
         this.loading = false;
+        const errorMessage = 'Error al eliminar doctor. Reintentá más tarde.';
+        this.error = errorMessage;
+        this.toastService.error(errorMessage);
         console.error('Error deleting doctor:', err);
       }
     });

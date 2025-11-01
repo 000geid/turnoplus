@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OfficeService } from '../../../core/services/office.service';
+import { ToastService } from '../../../shared/services/toast.service';
 import { Office, OfficeCreate, OfficeUpdate } from '../../../core/models/office';
 
 @Component({
@@ -27,7 +28,11 @@ export class OfficeManagementComponent implements OnInit {
     address: ''
   };
 
-  constructor(private officeService: OfficeService) {}
+  constructor(
+    private officeService: OfficeService,
+    private toastService: ToastService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadOffices();
@@ -70,10 +75,13 @@ export class OfficeManagementComponent implements OnInit {
     this.showCreateForm = false;
     this.editingOffice = null;
     this.formData = { code: '', name: '', address: '' };
+    // Force change detection to update the modal visibility
+    this.cdr.detectChanges();
   }
 
   onSubmit(): void {
     if (!this.formData.code.trim()) {
+      this.toastService.error('El código del consultorio es obligatorio');
       this.error = 'El código del consultorio es obligatorio';
       return;
     }
@@ -91,26 +99,32 @@ export class OfficeManagementComponent implements OnInit {
 
       this.officeService.updateOffice(this.editingOffice.id, updateData).subscribe({
         next: () => {
+          this.loading = false;
+          this.toastService.success('Consultorio actualizado correctamente');
           this.loadOffices();
           this.cancelForm();
         },
         error: (err) => {
-          this.error = 'Error al actualizar consultorio';
           this.loading = false;
-          console.error('Error updating office:', err);
+          const errorMessage = 'Error al actualizar consultorio. Reintentá más tarde.';
+          this.error = errorMessage;
+          this.toastService.error(errorMessage);
         }
       });
     } else {
       // Create new office
       this.officeService.createOffice(this.formData).subscribe({
         next: () => {
+          this.loading = false;
+          this.toastService.success('Oficina creada exitosamente');
           this.loadOffices();
           this.cancelForm();
         },
         error: (err) => {
-          this.error = 'Error al crear consultorio';
           this.loading = false;
-          console.error('Error creating office:', err);
+          const errorMessage = 'Error al crear consultorio. Reintentá más tarde.';
+          this.error = errorMessage;
+          this.toastService.error(errorMessage);
         }
       });
     }
@@ -126,11 +140,15 @@ export class OfficeManagementComponent implements OnInit {
 
     this.officeService.deleteOffice(office.id).subscribe({
       next: () => {
+        this.loading = false;
+        this.toastService.success('Consultorio eliminado correctamente');
         this.loadOffices();
       },
       error: (err) => {
-        this.error = 'Error al eliminar consultorio';
         this.loading = false;
+        const errorMessage = 'Error al eliminar consultorio. Reintentá más tarde.';
+        this.error = errorMessage;
+        this.toastService.error(errorMessage);
         console.error('Error deleting office:', err);
       }
     });

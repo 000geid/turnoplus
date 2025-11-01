@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.controllers.admins import (
     create_admin,
     delete_admin,
     get_admin,
-    login_admin,
     list_admins,
+    list_admins_paginated,
+    login_admin,
     update_admin,
 )
 from app.schemas.auth import AdminLoginResponse, LoginRequest
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Admin, AdminCreate, AdminUpdate
 
 
@@ -18,6 +20,14 @@ router = APIRouter()
 @router.get("/", response_model=list[Admin])
 def route_list_admins():
     return list_admins()
+
+
+@router.get("/paginated", response_model=PaginatedResponse[Admin])
+def route_list_admins_paginated(
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, le=100, description="Items per page")
+):
+    return list_admins_paginated(page=page, size=size)
 
 
 @router.get("/{admin_id}", response_model=Admin)

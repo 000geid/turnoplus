@@ -1,0 +1,116 @@
+<div class="pagination-container">
+  <div class="pagination-info">
+    <span *ngIf="showInfo && totalItems > 0" class="page-info">
+      Mostrando {{ startItem }} - {{ endItem }} de {{ totalItems }} resultados
+    </span>
+    <span *ngIf="showInfo && totalItems === 0" class="no-data">
+      No hay datos para mostrar
+    </span>
+  </div>
+
+  <div class="pagination-controls" *ngIf="totalPages > 1">
+    <!-- Page Size Selector -->
+    <div *ngIf="showPageSizeSelector" class="page-size-selector">
+      <label for="pageSize">Elementos por página:</label>
+      <select 
+        id="pageSize"
+        [value]="pageSize" 
+        (change)="onPageSizeChange($event)"
+        class="form-control">
+        <option *ngFor="let size of pageSizeOptions" [value]="size">
+          {{ size }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Page Navigation -->
+    <div class="page-navigation">
+      <!-- First Page -->
+      <button 
+        class="pagination-btn first-page"
+        [disabled]="currentPage === 1"
+        (click)="firstPage()"
+        title="Primera página">
+        <i class="material-icons">first_page</i>
+      </button>
+
+      <!-- Previous Page -->
+      <button 
+        class="pagination-btn prev-page"
+        [disabled]="currentPage === 1"
+        (click)="previousPage()"
+        title="Página anterior">
+        <i class="material-icons">chevron_left</i>
+      </button>
+
+      <!-- Page Numbers -->
+      <div class="page-numbers">
+        <button 
+          *ngFor="let page of visiblePages"
+          class="page-btn"
+          [class.active]="page === currentPage"
+          [disabled]="isEllipsis(page)"
+          (click)="!isEllipsis(page) && goToPage(page)">
+          {{ isEllipsis(page) ? '...' : page }}
+        </button>
+      </div>
+
+      <!-- Next Page -->
+      <button 
+        class="pagination-btn next-page"
+        [disabled]="currentPage === totalPages"
+        (click)="nextPage()"
+        title="Página siguiente">
+        <i class="material-icons">chevron_right</i>
+      </button>
+
+      <!-- Last Page -->
+      <button 
+        class="pagination-btn last-page"
+        [disabled]="currentPage === totalPages"
+        (click)="lastPage()"
+        title="Última página">
+        <i class="material-icons">last_page</i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Layout -->
+  <div class="mobile-pagination" *ngIf="totalPages > 1 && showPageSizeSelector">
+    <div class="page-size-selector">
+      <label for="pageSizeMobile">Elementos:</label>
+      <select 
+        id="pageSizeMobile"
+        [value]="pageSize" 
+        (change)="onPageSizeChange($event)"
+        class="form-control">
+        <option *ngFor="let size of pageSizeOptions" [value]="size">
+          {{ size }}
+        </option>
+      </select>
+    </div>
+
+    <div class="mobile-page-info">
+      <span *ngIf="showInfo">{{ startItem }}-{{ endItem }} de {{ totalItems }}</span>
+      <span *ngIf="showInfo" class="page-current">Página {{ currentPage }} de {{ totalPages }}</span>
+    </div>
+
+    <div class="mobile-controls">
+      <button 
+        class="pagination-btn"
+        [disabled]="currentPage === 1"
+        (click)="previousPage()">
+        <i class="material-icons">chevron_left</i>
+      </button>
+      
+      <span class="page-display">{{ currentPage }} / {{ totalPages }}</span>
+      
+      <button 
+        class="pagination-btn"
+        [disabled]="currentPage === totalPages"
+        (click)="nextPage()">
+        <i class="material-icons">chevron_right</i>
+      </button>
+    </div>
+  </div>
+</div>
