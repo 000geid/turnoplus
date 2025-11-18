@@ -10,10 +10,17 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 
 import { ToastService } from '../../../shared/services/toast.service';
 import { AvailabilityDto, AppointmentBlockDto } from '../../../core/models/appointment';
 import { AvailabilityCalendarComponent } from '../availability-calendar/availability-calendar.component';
+import {
+  DayAvailabilityModalComponent,
+  DayAvailabilityModalData,
+  DayAvailabilityModalCloseEvent
+} from '../../../shared/components/day-availability-modal/day-availability-modal.component';
+import { SharedCalendarComponent, CalendarDay } from '../../../shared/components/calendar/shared-calendar.component';
 
 export interface DoctorAvailabilityCreateEvent {
   startAt: string;
@@ -35,7 +42,15 @@ export interface DoctorAvailabilityUpdateEvent {
 @Component({
   selector: 'app-doctor-availability',
   standalone: true,
-  imports: [ReactiveFormsModule, NgIf, NgClass, DatePipe, AvailabilityCalendarComponent],
+  imports: [
+    ReactiveFormsModule,
+    NgIf,
+    NgClass,
+    DatePipe,
+    CommonModule,
+    SharedCalendarComponent,
+    DayAvailabilityModalComponent
+  ],
   templateUrl: './doctor-availability.component.html',
   styleUrl: './doctor-availability.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -56,8 +71,13 @@ export class DoctorAvailabilityComponent {
   private readonly fb = inject(FormBuilder);
   private readonly toastService = inject(ToastService);
 
-  readonly formError = signal<string | null>(null);
+readonly formError = signal<string | null>(null);
   readonly viewMode = signal<'list' | 'calendar'>('calendar');
+  
+  // Modal state management
+  readonly modalData = signal<DayAvailabilityModalData | null>(null);
+  readonly isDeleting = signal<boolean>(false);
+
   readonly form = this.fb.nonNullable.group({
     date: ['', Validators.required],
     template: ['', Validators.required],
@@ -295,9 +315,15 @@ export class DoctorAvailabilityComponent {
     this.viewMode.set(mode);
   }
 
-  onDaySelected(date: Date): void {
-    // Handle day selection if needed
-    console.log('Day selected:', date);
+onDaySelected(date: Date): void {
+    // Open modal with day availability
+    const modalData: DayAvailabilityModalData = {
+      date: date,
+      mode: 'doctor',
+      availabilityData: this.availability
+    };
+
+    this.modalData.set(modalData);
   }
 
   onConfigureAvailability(date: Date): void {
@@ -314,9 +340,48 @@ export class DoctorAvailabilityComponent {
     }
   }
 
-  onAvailabilitySelected(availability: AvailabilityDto): void {
+onAvailabilitySelected(availability: AvailabilityDto): void {
     // Handle availability selection if needed
     console.log('Availability selected:', availability);
+  }
+
+  // Modal event handlers
+  onModalClose(event: DayAvailabilityModalCloseEvent): void {
+    this.modalData.set(null);
+    this.isDeleting.set(false);
+
+    // Handle different types of modal events
+    switch (event.type) {
+      case 'availabilityConfigured':
+        // Pre-fill form with selected date
+        if (event.data?.date) {
+          const dateString = event.data.date.toISOString().split('T')[0];
+          this.form.patchValue({
+            date: dateString
+          });
+          
+          // Scroll to form for better UX
+          const formElement = document.querySelector('.doctor-availability__form');
+          if (formElement) {
+            formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+        break;
+      case 'availabilityDeleted':
+        // Delete availability
+        if (event.data && event.data.id) {
+          this.isDeleting.set(true);
+          this.update.emit({
+            id: event.data.id
+          });
+          // Note: The actual deletion will be handled by the parent component
+          // This would need to be integrated with the existing deletion logic
+        }
+        break;
+      case 'close':
+        // Modal was closed, no action needed
+        break;
+    }
   }
 
   private initializeDefaultRange(): void {

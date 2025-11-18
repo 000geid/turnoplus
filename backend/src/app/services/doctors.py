@@ -14,6 +14,7 @@ from app.models.user import User as UserModel
 from app.models.patient import Patient as PatientModel
 from app.models.appointment import Appointment as AppointmentModel
 from app.models.office import Office as OfficeModel
+from app.models.availability import Availability
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Doctor, DoctorCreate, DoctorUpdate, Patient
 from app.utils.security import hash_password, verify_password
@@ -132,9 +133,36 @@ class DoctorsService:
                 return False
 
             user = doctor.user
+            
+            # Import models locally to avoid circular imports
+            from app.models.appointment_block import AppointmentBlock
+            
+            # Delete dependent records in the correct order to avoid constraint violations
+            # 1. Delete appointments that reference this doctor
+            stmt = select(AppointmentModel).where(AppointmentModel.doctor_id == doctor_id)
+            appointments = session.scalars(stmt).all()
+            for appointment in appointments:
+                session.delete(appointment)
+            
+            # 2. Delete appointment_blocks that are linked to availabilities for this doctor
+            stmt = select(AppointmentBlock).join(Availability).where(Availability.doctor_id == doctor_id)
+            appointment_blocks = session.scalars(stmt).all()
+            for block in appointment_blocks:
+                session.delete(block)
+            
+            # 3. Delete availabilities that reference this doctor
+            stmt = select(Availability).where(Availability.doctor_id == doctor_id)
+            availabilities = session.scalars(stmt).all()
+            for availability in availabilities:
+                session.delete(availability)
+            
+            # 4. Delete doctor record
             session.delete(doctor)
+            
+            # 5. Delete user record last
             if user:
                 session.delete(user)
+                
             session.flush()
             return True
 
@@ -200,6 +228,10 @@ class DoctorsService:
                 return None
 
             if not verify_password(password, doctor.user.password_hash):
+                return None
+            
+            # Validate role - only DOCTOR role can use this endpoint
+            if doctor.user.role != UserRole.DOCTOR:
                 return None
 
             return self._to_schema(doctor), f"doctor-token-{doctor.user.id}"

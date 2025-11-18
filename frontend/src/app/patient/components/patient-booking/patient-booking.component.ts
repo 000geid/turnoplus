@@ -9,6 +9,11 @@ import { DoctorDto } from '../../../core/models/user';
 import { AppointmentCreateRequest, AppointmentDto, AppointmentBlockDto } from '../../../core/models/appointment';
 import { DoctorAutocompleteComponent } from '../../../shared/components/doctor-autocomplete/doctor-autocomplete.component';
 import { SharedCalendarComponent, CalendarDay } from '../../../shared/components/calendar/shared-calendar.component';
+import {
+  DayAvailabilityModalComponent,
+  DayAvailabilityModalData,
+  DayAvailabilityModalCloseEvent
+} from '../../../shared/components/day-availability-modal/day-availability-modal.component';
 
 @Component({
   selector: 'app-patient-booking',
@@ -16,7 +21,8 @@ import { SharedCalendarComponent, CalendarDay } from '../../../shared/components
   imports: [
     CommonModule,
     DoctorAutocompleteComponent,
-    SharedCalendarComponent
+    SharedCalendarComponent,
+    DayAvailabilityModalComponent
   ],
   templateUrl: './patient-booking.component.html',
   styleUrl: './patient-booking.component.scss',
@@ -39,6 +45,9 @@ export class PatientBookingComponent {
   readonly isLoadingBlocks = signal<boolean>(false);
   readonly isBooking = signal<boolean>(false);
   readonly selectedCalendarDay = signal<CalendarDay | null>(null);
+  
+  // Modal state management
+  readonly modalData = signal<DayAvailabilityModalData | null>(null);
 
   // Enhanced data structures for better calendar display
   readonly availabilityByDay = computed(() => {
@@ -81,64 +90,54 @@ export class PatientBookingComponent {
     console.log('Doctor search term changed:', searchTerm);
   }
 
-  // Calendar handlers
+  // Calendar handlers - now opens modal instead of inline display
   onCalendarDaySelected(day: CalendarDay): void {
-    this.selectedCalendarDay.set(day);
+    // Open modal with day availability
+    if (!this.selectedDoctor() || !this.patientId) {
+      return;
+    }
+
+    const modalData: DayAvailabilityModalData = {
+      date: day.date,
+      mode: 'patient',
+      availabilityData: this.availableBlocks(),
+      doctorInfo: this.selectedDoctor(),
+      patientId: this.patientId
+    };
+
+    this.modalData.set(modalData);
   }
 
-  onCalendarMonthChanged(date: Date): void {
+onCalendarMonthChanged(date: Date): void {
     const doctor = this.selectedDoctor();
     if (doctor) {
       this.loadAvailabilityForDoctor(doctor.id);
     }
   }
 
-  // Booking handlers
-  onAppointmentBlockSelected(block: AppointmentBlockDto): void {
-    this.bookAppointmentBlock(block);
-  }
+  // Modal event handlers
+  onModalClose(event: DayAvailabilityModalCloseEvent): void {
+    this.modalData.set(null);
 
-  bookAppointmentBlock(block: AppointmentBlockDto): void {
-    const doctor = this.selectedDoctor();
-    if (!doctor || !this.patientId) {
-      this.toastService.error('Faltan datos para reservar el turno.');
-      return;
-    }
-
-    if (new Date(block.startAt) <= this.now) {
-      this.toastService.error('No se puede reservar un turno pasado.');
-      return;
-    }
-
-    this.isBooking.set(true);
-    this.toastService.info('Reservando turno...', { config: { duration: 0 } });
-
-    const payload: AppointmentCreateRequest = {
-      doctor_id: doctor.id,
-      patient_id: this.patientId,
-      start_at: new Date(block.startAt).toISOString(),
-      end_at: new Date(block.endAt).toISOString()
-    };
-
-    this.appointmentsService
-      .book(payload)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (appointment) => {
-          this.isBooking.set(false);
-          this.toastService.success('¡Turno reservado con éxito!');
-          this.booked.emit(appointment);
-          
-          // Refresh availability
-          setTimeout(() => {
-            this.loadAvailabilityForDoctor(doctor.id);
-          }, 500);
-        },
-        error: () => {
-          this.isBooking.set(false);
-          this.toastService.error('No pudimos reservar el turno. Intentá nuevamente.');
+    // Handle different types of modal events
+    switch (event.type) {
+      case 'appointmentBooked':
+        // Appointment was successfully booked
+        if (event.data) {
+          this.booked.emit(event.data);
+          // Refresh availability after booking
+          const doctor = this.selectedDoctor();
+          if (doctor) {
+            setTimeout(() => {
+              this.loadAvailabilityForDoctor(doctor.id);
+            }, 500);
+          }
         }
-      });
+        break;
+      case 'close':
+        // Modal was closed, no action needed
+        break;
+    }
   }
 
   // Data loading

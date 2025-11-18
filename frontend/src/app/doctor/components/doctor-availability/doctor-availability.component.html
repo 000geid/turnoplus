@@ -101,12 +101,12 @@
   } @else {
     <!-- Calendar View -->
     @if (viewMode() === 'calendar') {
-      <app-availability-calendar
-        [availability]="availability"
+      <app-shared-calendar
+        mode="doctor"
+        [data]="availability"
         [loading]="loading"
-        (daySelected)="onDaySelected($event)"
-        (availabilitySelected)="onAvailabilitySelected($event)"
-        (configureAvailability)="onConfigureAvailability($event)"
+        (dayClick)="onDaySelected($event.date)"
+        (monthChanged)="onConfigureAvailability($event)"
       />
       
       @if (!hasAvailability()) {
@@ -189,3 +189,11 @@
     }
   }
 </section>
+
+<!-- Day Availability Modal -->
+@if (modalData()) {
+  <app-day-availability-modal
+    [data]="modalData()!"
+    (modalClose)="onModalClose($event)"
+  />
+}

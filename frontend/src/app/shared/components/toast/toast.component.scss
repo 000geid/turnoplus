@@ -15,6 +15,9 @@
   line-height: 1.25rem;
   max-width: var(--toast-max-width, 400px);
   position: relative;
+  
+  /* Ensure border color is properly applied */
+  border-color: var(--toast-border-color, currentColor);
 
   &.dismissible {
     padding-right: 2.5rem;
@@ -75,6 +78,75 @@
 // Animation classes for MatSnackBar
 .mat-mdc-snack-bar-container {
   --mdc-snackbar-supporting-text-color: inherit;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+
+  // Ensure toast borders are always visible
+  .toast {
+    border-style: solid !important;
+    border-width: 1px !important;
+  }
+  
+  // Override any Material Design borders
+  .mat-mdc-simple-snack-bar {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+
+// Override CDK overlay backdrop that Material snackbar uses
+:host ::ng-deep {
+  .cdk-overlay-container {
+    .cdk-overlay-pane {
+      .mat-mdc-snack-bar-container {
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        filter: none !important;
+        backdrop-filter: none !important;
+        border: none !important;
+        margin: 0 !important;
+      }
+    }
+  }
+
+  // Target backdrop overlay specifically
+  .cdk-overlay-backdrop {
+    background: none !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+    opacity: 0 !important;
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  // Override CDK overlay pane
+  .cdk-overlay-pane {
+    filter: none !important;
+    backdrop-filter: none !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  // Target Material snackbar specific containers
+  .mat-mdc-snack-bar-container,
+  .mat-mdc-simple-snack-bar {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
 }
 
 .mat-mdc-snack-bar-handset {

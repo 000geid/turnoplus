@@ -142,6 +142,9 @@ export class OfficeManagementComponent implements OnInit {
       next: () => {
         this.loading = false;
         this.toastService.success('Consultorio eliminado correctamente');
+        // Close the modal and reset form state
+        this.cancelForm();
+        // Refresh the list after closing the modal
         this.loadOffices();
       },
       error: (err) => {

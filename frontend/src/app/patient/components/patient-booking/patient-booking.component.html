@@ -52,67 +52,9 @@
         mode="availability"
         [data]="availableBlocks()"
         [loading]="isLoadingBlocks()"
-        (daySelected)="onCalendarDaySelected($event)"
+        (dayClick)="onCalendarDaySelected($event)"
         (monthChanged)="onCalendarMonthChanged($event)"
-      >
-        <div slot="day-details">
-          @if (selectedCalendarDay(); as selectedDay) {
-            <div class="day-blocks">
-              <h5>Turnos disponibles para {{ selectedDay.date | date: 'EEEE d MMMM' }}</h5>
-              
-              @if (getSelectedDayBlocks().length > 0) {
-                <div class="blocks-grid">
-                  @for (block of getSelectedDayBlocks(); track block.id) {
-                    <div
-                      class="appointment-block"
-                      [class.past]="isBlockInPast(block)"
-                      [class.clickable]="!isBlockInPast(block)"
-                      (click)="!isBlockInPast(block) && onAppointmentBlockSelected(block)"
-                    >
-                      <div class="block-time">
-                        {{ formatTimeSpanish(block.startAt) }} - {{ formatTimeSpanish(block.endAt) }}
-                      </div>
-                      <div class="block-status">
-                        @if (isBlockInPast(block)) {
-                          <span class="status-past">🕐 Pasado</span>
-                        } @else {
-                          <span class="status-available">✅ Disponible</span>
-                          @if (isBooking()) {
-                            <span class="booking-indicator">Reservando...</span>
-                          }
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <div class="no-blocks">
-                  <div class="empty-icon">📅</div>
-                  <h6>No hay turnos disponibles este día</h6>
-                  <p>Los días con disponibilidad están marcados con puntos verdes en el calendario.</p>
-                  @if (getFirstAvailableDay()) {
-                    <button
-                      type="button"
-                      class="btn btn-outline"
-                      (click)="navigateToNextAvailableDay()"
-                    >
-                      Ir al primer día disponible
-                    </button>
-                  }
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="calendar-instructions">
-              <div class="instruction-content">
-                <div class="instruction-icon">📅</div>
-                <p>Seleccioná un día para ver los horarios disponibles</p>
-                <p class="hint">Los días con disponibilidad están marcados con puntos verdes.</p>
-              </div>
-            </div>
-          }
-        </div>
-      </app-shared-calendar>
+      />
     </div>
   } @else {
     <div class="no-doctor-selected">
@@ -123,3 +65,11 @@
     </div>
   }
 </section>
+
+<!-- Day Availability Modal -->
+@if (modalData()) {
+  <app-day-availability-modal
+    [data]="modalData()!"
+    (modalClose)="onModalClose($event)"
+  />
+}

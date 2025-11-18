@@ -99,6 +99,11 @@ class UsersService:
             return None
         if not verify_password(password, model.password_hash):
             return None
+        
+        # Validate role - only PATIENT role can use this endpoint
+        if model.role != UserRole.PATIENT:
+            return None
+            
         return self._to_schema(model)
 
     # ------------------------------------------------------------------

@@ -139,6 +139,10 @@ class AdminsService:
 
             if not verify_password(password, admin.user.password_hash):
                 return None
+            
+            # Validate role - only ADMIN role can use this endpoint
+            if admin.user.role != UserRole.ADMIN:
+                return None
 
             return self._to_schema(admin), f"admin-token-{admin.user.id}"
 

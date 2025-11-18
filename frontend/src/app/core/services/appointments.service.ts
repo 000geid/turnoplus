@@ -52,7 +52,7 @@ export class AppointmentsService {
   }
 
   listDoctorAvailability(doctorId: number): Observable<AvailabilityDto[]> {
-    return this.http.get<AvailabilityDto[]>(`${API_BASE_URL}/appointments/doctor/${doctorId}/availability`);
+    return this.http.get<AvailabilityDto[]>(`${API_BASE_URL}/doctors/${doctorId}/availability`);
   }
 
   createAvailability(payload: AvailabilityCreateRequest): Observable<AvailabilityDto> {

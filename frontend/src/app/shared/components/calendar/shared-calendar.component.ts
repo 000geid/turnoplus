@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input, Output, EventEmitter, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DatePipe } from '@angular/common';
 
 export interface CalendarDay {
   date: Date;
@@ -14,7 +13,7 @@ export type CalendarMode = 'doctor' | 'availability' | 'simple';
 @Component({
   selector: 'app-shared-calendar',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule],
   templateUrl: './shared-calendar.component.html',
   styleUrl: './shared-calendar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -27,11 +26,10 @@ export class SharedCalendarComponent {
   @Input() showMonthNavigation = true;
   @Input() customDayContent?: (day: CalendarDay) => any;
 
-  @Output() daySelected = new EventEmitter<CalendarDay>();
+@Output() dayClick = new EventEmitter<CalendarDay>();
   @Output() monthChanged = new EventEmitter<Date>();
 
-  readonly currentDate = signal(new Date());
-  readonly selectedDate = signal<Date | null>(null);
+readonly currentDate = signal(new Date());
   readonly now = new Date();
 
   readonly currentMonth = computed(() => this.currentDate().getMonth());
@@ -77,7 +75,7 @@ export class SharedCalendarComponent {
   private getDataForDay(date: Date): any {
     switch (this.mode) {
       case 'doctor':
-        return this.getDoctorsForDay(date);
+        return this.getDoctorAvailabilityForDay(date);
       case 'availability':
         return this.getAvailabilityForDay(date);
       case 'simple':
@@ -86,16 +84,17 @@ export class SharedCalendarComponent {
     }
   }
 
-  private getDoctorsForDay(date: Date): any[] {
-    // Filter doctors who have availability on this date
-    return this.data.filter(item => {
-      if (item.availability && Array.isArray(item.availability)) {
-        return item.availability.some((avail: any) => {
-          const availDate = new Date(avail.startAt);
-          return availDate.toDateString() === date.toDateString();
-        });
-      }
-      return false;
+  private getDoctorAvailabilityForDay(date: Date): any[] {
+    // For doctor mode, filter availability items for this date
+    return this.data.filter(availability => {
+      if (!availability || !availability.startAt) return false;
+      
+      const availDate = new Date(availability.startAt);
+      // Compare dates without time to ensure proper matching
+      const availDateOnly = new Date(availDate.getFullYear(), availDate.getMonth(), availDate.getDate());
+      const targetDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      
+      return availDateOnly.getTime() === targetDateOnly.getTime();
     });
   }
 
@@ -167,13 +166,14 @@ export class SharedCalendarComponent {
     this.monthChanged.emit(today);
   }
 
-  selectDay(day: CalendarDay): void {
-    this.selectedDate.set(day.date);
-    this.daySelected.emit(day);
+selectDay(day: CalendarDay): void {
+    // Note: We don't set selectedDate anymore since we're using popup instead of inline selection
+    this.dayClick.emit(day);
   }
 
-  isDaySelected(day: CalendarDay): boolean {
-    return this.selectedDate()?.toDateString() === day.date.toDateString();
+isDaySelected(day: CalendarDay): boolean {
+    // Removed - no longer needed since we use popup instead of inline selection
+    return false;
   }
 
   isWeekend(day: CalendarDay): boolean {
@@ -207,8 +207,21 @@ export class SharedCalendarComponent {
   getDataSummary(day: CalendarDay): string {
     switch (this.mode) {
       case 'doctor':
-        const doctorCount = this.getDataCount(day);
-        return doctorCount > 0 ? `${doctorCount} profesionales` : '';
+        const availabilityCount = this.getDataCount(day);
+        if (availabilityCount === 0) return '';
+        
+        // Calculate total and available blocks
+        let totalBlocks = 0;
+        let availableBlocks = 0;
+        
+        day.data.forEach((availability: any) => {
+          if (availability.blocks && Array.isArray(availability.blocks)) {
+            totalBlocks += availability.blocks.length;
+            availableBlocks += availability.blocks.filter((block: any) => !block.isBooked).length;
+          }
+        });
+        
+        return `${availableBlocks}/${totalBlocks} disponibles`;
       case 'availability':
         const blockCount = this.getDataCount(day);
         return blockCount > 0 ? `${blockCount} turnos` : '';

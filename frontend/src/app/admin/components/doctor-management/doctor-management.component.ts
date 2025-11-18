@@ -208,6 +208,9 @@ export class DoctorManagementComponent implements OnInit {
       next: () => {
         this.loading = false;
         this.toastService.success('Doctor eliminado correctamente');
+        // Close the modal and reset form state
+        this.cancelForm();
+        // Refresh the list after closing the modal
         this.loadDoctors();
       },
       error: (err) => {

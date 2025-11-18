@@ -84,7 +84,7 @@
   }
 
   .calendar-day {
-    background: var(--surface-card);
+    background: var(--color-surface); // Default white background
     min-height: 100px;
     position: relative;
     padding: 0.5rem;
@@ -99,14 +99,27 @@
       }
     }
 
-    &.current-month {
-      background: var(--surface-card);
+    // Weekend styling takes precedence - darkest gray
+    &.weekend {
+      background: var(--color-border); // Darker gray for weekends
+      color: var(--text-secondary);
+      
+      // Ensure weekend days maintain hover effect
+      &.clickable:hover {
+        background: var(--border-strong);
+      }
     }
 
-    &:not(.current-month) {
-      background: var(--surface-section);
+    // Current month weekdays (not weekends) - white background
+    &.current-month:not(.weekend) {
+      background: var(--color-surface); // White background for current month days
+    }
+
+    // Other month days (not weekends) - light gray background
+    &:not(.current-month):not(.weekend) {
+      background: var(--color-surface-alt); // Light gray for overflow days
       color: var(--text-secondary);
-      opacity: 0.6;
+      opacity: 0.8;
     }
 
     &.today {
@@ -134,11 +147,6 @@
       }
     }
 
-    &.selected {
-      outline: 2px solid var(--primary-color);
-      outline-offset: -2px;
-    }
-
     &.has-data {
       .day-number {
         color: var(--primary-color);
@@ -146,16 +154,11 @@
       }
     }
 
-    &.weekend {
-      background: var(--surface-section);
-    }
-
     &.past-day:not(.current-month) {
       opacity: 0.4;
     }
 
     &.empty-day:not(.current-month) {
-      background: var(--surface-section);
       opacity: 0.4;
     }
 
@@ -276,19 +279,6 @@
     }
   }
 
-  .selected-day-details {
-    margin-top: 1.5rem;
-    padding: 1.5rem;
-    background: var(--surface-card);
-    border: 1px solid var(--border-light);
-    border-radius: var(--border-radius);
-
-    h4 {
-      margin: 0 0 1rem 0;
-      color: var(--text-primary);
-      font-size: 1.25rem;
-    }
-  }
 
   .calendar-instructions {
     margin-top: 2rem;
