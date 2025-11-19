@@ -244,3 +244,78 @@ bash
 Copiar código
 cd frontend
 npm install --legacy-peer-deps
+ 
+---
+ 
+# Despliegue en Render (Backend + Frontend)
+ 
+## Botón de deploy
+ 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/<TU_USUARIO>/<TU_REPO>)
+ 
+Con `render.yaml` en la raíz, Render detecta los dos servicios:
+- `turnoplus-backend` (Web Service, Python)
+- `turnoplus-frontend` (Static Site)
+ 
+## Backend en Render
+- Runtime: Python
+- Directorio raíz: `backend`
+- Build command: `uv pip install -r pyproject.toml`
+- Start command: `uv run python scripts/write_aiven_ca.py && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src`
+- Health check: `/healthz`
+- Variables de entorno:
+  - `DATABASE_URL` (Producción Aiven):
+    - `mysql+pymysql://avnadmin:${AIVEN_DB_PASSWORD}@turnosplus-pmccole14-ecdc.g.aivencloud.com:21861/defaultdb?ssl_ca=/opt/render/project/src/backend/certs/aiven-ca.pem&ssl_check_hostname=true`
+  - `AIVEN_DB_PASSWORD` (secret)
+  - `AIVEN_SSL_CA_PATH=/opt/render/project/src/backend/certs/aiven-ca.pem`
+  - Opcional: `CORS_ORIGINS`
+ 
+## Frontend en Render
+- Tipo: Static Site
+- Directorio raíz: `frontend`
+- Build command: `npm install --legacy-peer-deps && npm run build`
+- Public dir: `dist/turnoplus/browser`
+- Variable de entorno:
+  - `API_BASE_URL=https://<BACKEND>.onrender.com/api/v1`
+- El build genera `public/env.js` automáticamente desde `render.yaml` con el valor de `API_BASE_URL`. En runtime, `api.config.ts` toma `window.__env__.API_BASE_URL` o usa `http://localhost:8000/api/v1` como fallback.
+ 
+## Migraciones en Aiven
+- Asegúrate de que `DATABASE_URL` en el servicio backend apunte a Aiven.
+- Ejecuta desde una shell del servicio backend o desde tu máquina local:
+ 
+```bash
+cd backend
+uv run alembic upgrade head
+```
+ 
+### Ejecución rápida vía script
+ 
+```bash
+cd backend
+uv run python scripts/migrate.py
+```
+ 
+---
+ 
+## Resumen de comandos
+ 
+### Local
+- Backend:
+  - `cd backend && uv pip install -r pyproject.toml`
+  - `copy .env.example .env` y ajustar `DATABASE_URL` local
+  - `uv run alembic upgrade head`
+  - `uv run uvicorn app.main:app --reload --app-dir src`
+- Frontend:
+  - `cd frontend && npm install --legacy-peer-deps && npm start`
+ 
+### Render
+- Backend Web Service:
+  - Build: `uv pip install -r pyproject.toml`
+  - Start: `uv run python scripts/write_aiven_ca.py && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src`
+  - Env: `DATABASE_URL` como arriba (Aiven)
+- Frontend Static Site:
+  - Build: `npm install --legacy-peer-deps && npm run build`
+  - Publish: `frontend/dist/turnoplus/browser`
+  - Env: `API_BASE_URL=https://<BACKEND>.onrender.com/api/v1`
+- Migraciones Aiven:
+  - `cd backend && uv run alembic upgrade head`

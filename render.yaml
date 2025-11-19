@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: turnoplus-backend
+    env: python
+    rootDir: backend
+    buildCommand: uv pip install -r pyproject.toml
+    startCommand: uv run python scripts/write_aiven_ca.py && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: AIVEN_DB_PASSWORD
+        sync: false
+      - key: AIVEN_SSL_CA_PATH
+        value: /opt/render/project/src/backend/certs/aiven-ca.pem
+
+  - type: static_site
+    name: turnoplus-frontend
+    rootDir: frontend
+    buildCommand: echo "window.__env__={API_BASE_URL:'$API_BASE_URL'}" > public/env.js && npm install --legacy-peer-deps && npm run build
+    publishPath: dist/turnoplus/browser
+    envVars:
+      - key: API_BASE_URL
+        sync: false
