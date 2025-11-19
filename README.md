@@ -251,7 +251,7 @@ npm install --legacy-peer-deps
  
 ## Botón de deploy
  
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/<TU_USUARIO>/<TU_REPO>)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/000geid/turnoplus)
  
 Con `render.yaml` en la raíz, Render detecta los dos servicios:
 - `turnoplus-backend` (Web Service, Python)
