@@ -2,7 +2,7 @@ services:
   - type: web
     name: turnoplus-backend
     runtime: python
-    plan: free
+    plan: starter
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: python scripts/write_aiven_ca.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src
@@ -16,7 +16,7 @@ services:
   - type: web
     name: turnoplus-frontend
     runtime: static
-    plan: free
+    plan: starter
     rootDir: frontend
     buildCommand: echo "window.__env__={API_BASE_URL:'$BACKEND_URL/api/v1'}" > public/env.js && npm install --legacy-peer-deps && npm run build
     staticPublishPath: dist/turnoplus/browser
