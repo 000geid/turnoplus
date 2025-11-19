@@ -2,14 +2,13 @@ services:
   - type: web
     name: turnoplus-backend
     runtime: python
+    plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: uv run python scripts/write_aiven_ca.py && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src
+    startCommand: python scripts/write_aiven_ca.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src
     healthCheckPath: /healthz
     envVars:
       - key: DATABASE_URL
-        sync: false
-      - key: AIVEN_DB_PASSWORD
         sync: false
       - key: AIVEN_SSL_CA_PATH
         value: /opt/render/project/src/backend/certs/aiven-ca.pem
@@ -17,9 +16,13 @@ services:
   - type: web
     name: turnoplus-frontend
     runtime: static
+    plan: free
     rootDir: frontend
-    buildCommand: echo "window.__env__={API_BASE_URL:'$API_BASE_URL'}" > public/env.js && npm install --legacy-peer-deps && npm run build
+    buildCommand: echo "window.__env__={API_BASE_URL:'$BACKEND_URL/api/v1'}" > public/env.js && npm install --legacy-peer-deps && npm run build
     staticPublishPath: dist/turnoplus/browser
     envVars:
-      - key: API_BASE_URL
-        sync: false
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: turnoplus-backend
+          envVarKey: RENDER_EXTERNAL_URL
