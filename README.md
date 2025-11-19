@@ -247,40 +247,36 @@ npm install --legacy-peer-deps
  
 ---
  
-# Despliegue en Render (Backend + Frontend)
+# Despliegue en Railway (Backend + Frontend)
  
 ## Botón de deploy
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/TEMPLATE_ID?utm_medium=integration&utm_source=button&utm_campaign=turnoplus)
  
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/000geid/turnoplus)
+En Railway crea un proyecto y despliega dos servicios desde este repositorio:
+- `turnoplus-backend` (Web Service Python)
+- `turnoplus-frontend` (Web Service Node para estáticos)
  
-Con `render.yaml` en la raíz, Render detecta los dos servicios:
-- `turnoplus-backend` (Web Service, Python)
-- `turnoplus-frontend` (Static Site)
- 
-## Backend en Render
-- Runtime: Python
+## Backend en Railway
 - Directorio raíz: `backend`
-- Build command: `uv pip install -r pyproject.toml`
-- Start command: `uv run python scripts/write_aiven_ca.py && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src`
-- Health check: `/healthz`
-- Variables de entorno:
-  - `DATABASE_URL` (Producción Aiven):
-    - `mysql+pymysql://avnadmin:${AIVEN_DB_PASSWORD}@turnosplus-pmccole14-ecdc.g.aivencloud.com:21861/defaultdb?ssl_ca=/opt/render/project/src/backend/certs/aiven-ca.pem&ssl_check_hostname=true`
-  - `AIVEN_DB_PASSWORD` (secret)
-  - `AIVEN_SSL_CA_PATH=/opt/render/project/src/backend/certs/aiven-ca.pem`
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `python scripts/write_aiven_ca.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src`
+- Healthcheck: `/healthz`
+- Variables:
+  - `DATABASE_URL`: `mysql+pymysql://avnadmin:${AIVEN_DB_PASSWORD}@turnosplus-pmccole14-ecdc.g.aivencloud.com:21861/defaultdb?ssl_ca=/app/backend/certs/aiven-ca.pem&ssl_check_hostname=true`
+  - `AIVEN_CA_PEM`: contenido del certificado CA en PEM
   - Opcional: `CORS_ORIGINS`
  
-## Frontend en Render
-- Tipo: Static Site
+## Frontend en Railway
 - Directorio raíz: `frontend`
-- Build command: `npm install --legacy-peer-deps && npm run build`
-- Public dir: `dist/turnoplus/browser`
-- Variable de entorno:
-  - `API_BASE_URL=https://<BACKEND>.onrender.com/api/v1`
-- El build genera `public/env.js` automáticamente desde `render.yaml` con el valor de `API_BASE_URL`. En runtime, `api.config.ts` toma `window.__env__.API_BASE_URL` o usa `http://localhost:8000/api/v1` como fallback.
+- Build Command: `echo "window.__env__={API_BASE_URL:'$API_BASE_URL'}" > public/env.js && npm install --legacy-peer-deps && npm run build`
+- Start Command: `npm run start:prod`
+- Variables:
+  - `API_BASE_URL=https://<NOMBRE_BACKEND>.railway.app/api/v1`
+- Sirve los estáticos desde `dist/turnoplus/browser` usando `frontend/server.js`.
  
 ## Migraciones en Aiven
-- Asegúrate de que `DATABASE_URL` en el servicio backend apunte a Aiven.
+- Asegúrate de que `DATABASE_URL` apunte a Aiven.
 - Ejecuta desde una shell del servicio backend o desde tu máquina local:
  
 ```bash
@@ -308,14 +304,44 @@ uv run python scripts/migrate.py
 - Frontend:
   - `cd frontend && npm install --legacy-peer-deps && npm start`
  
-### Render
-- Backend Web Service:
-  - Build: `uv pip install -r pyproject.toml`
-  - Start: `uv run python scripts/write_aiven_ca.py && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src`
+### Railway
+- Backend:
+  - Build: `pip install -r requirements.txt`
+  - Start: `python scripts/write_aiven_ca.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src`
   - Env: `DATABASE_URL` como arriba (Aiven)
-- Frontend Static Site:
-  - Build: `npm install --legacy-peer-deps && npm run build`
-  - Publish: `frontend/dist/turnoplus/browser`
-  - Env: `API_BASE_URL=https://<BACKEND>.onrender.com/api/v1`
+- Frontend:
+  - Build: `echo "window.__env__={API_BASE_URL:'$API_BASE_URL'}" > public/env.js && npm install --legacy-peer-deps && npm run build`
+  - Start: `npm run start:prod`
+  - Env: `API_BASE_URL=https://<NOMBRE_BACKEND>.railway.app/api/v1`
 - Migraciones Aiven:
   - `cd backend && uv run alembic upgrade head`
+
+---
+
+## Crear un Template de Railway (one‑click deploy)
+
+Sigue estos pasos para generar tu propio enlace de despliegue de un clic que cree ambos servicios automáticamente:
+
+1. Abre Railway y crea un nuevo Proyecto.
+2. Añade el servicio Backend desde este repo:
+   - Source: GitHub → `000geid/turnoplus`
+   - Root Directory: `backend`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `python scripts/write_aiven_ca.py && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir src`
+   - Healthcheck: `/healthz`
+   - Variables requeridas:
+     - `DATABASE_URL` (Aiven con SSL)
+     - `AIVEN_CA_PEM` (contenido del CA)
+3. Añade el servicio Frontend desde el mismo repo:
+   - Root Directory: `frontend`
+   - Build Command: `echo "window.__env__={API_BASE_URL:'$API_BASE_URL'}" > public/env.js && npm install --legacy-peer-deps && npm run build`
+   - Start Command: `npm run start:prod`
+   - Variables requeridas:
+     - `API_BASE_URL` = `https://<NOMBRE_BACKEND>.railway.app/api/v1`
+4. En el Proyecto, convierte la configuración en Template:
+   - En el Workspace: Templates → Create Template (desde el proyecto actual).
+   - Asegúrate de que ambos servicios estén vinculados al repo público `000geid/turnoplus`.
+   - Publica el template para obtener una URL de despliegue.
+5. Copia el enlace del template (`https://railway.com/new/template/<ID>`) y reemplaza `TEMPLATE_ID` en el botón del README.
+
+Con este template, cualquier persona podrá crear el backend y el frontend preconfigurados en Railway con un clic y solo completar las variables.
