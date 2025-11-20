@@ -285,8 +285,16 @@
     text-align: center;
 
     .instructions-content {
-      padding: 2rem;
+      padding: 2rem 1.5rem;
       color: var(--text-secondary);
+
+      @media (max-width: 768px) {
+        padding: 1.5rem 1rem;
+      }
+
+      @media (max-width: 480px) {
+        padding: 1rem 0.75rem;
+      }
 
       .instruction-icon {
         font-size: 3rem;

@@ -280,7 +280,7 @@
 
     .default-list {
       .dropdown-header {
-        padding: 0.75rem 1rem;
+        padding: 0.75rem 1.25rem;
         background: var(--surface-section);
         border-bottom: 1px solid var(--border-light);
 
@@ -405,7 +405,7 @@
     }
 
     .selected-doctor-display {
-      padding: 0.75rem;
+      padding: 0.75rem 1rem;
       flex-direction: column;
       gap: 0.75rem;
 
@@ -425,7 +425,7 @@
   .doctor-autocomplete {
     .input-wrapper {
       .search-input {
-        padding: 0.625rem 0.75rem;
+        padding: 0.625rem 1rem;
         font-size: 0.8rem;
       }
     }

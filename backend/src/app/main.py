@@ -1,34 +1,37 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+import logging
 
 from app.api.v1 import api_v1_router
+from app.db.settings import get_cors_settings
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title="TurnoPlus API", version="0.1.0")
 
-    # CORS configuration - allowing all origins for development
-    # In production, this should be restricted to specific domains
-    allowed_origins = [
-        "http://localhost:4200",      # Angular CLI default
-        "http://127.0.0.1:4200",     # Angular CLI default
-        "http://localhost:5173",     # Vite default
-        "http://127.0.0.1:5173",     # Vite default
-        "http://localhost:8080",     # Common alternative port
-        "http://127.0.0.1:8080",     # Common alternative port
-        "http://localhost:3000",     # Create React App default
-        "http://127.0.0.1:3000",     # Create React App default
-        "https://molly-artistic-bat.ngrok-free.app",  # Ngrok tunnel for external access
-        "https://backend-tunnel.ogeid.xyz",  # Dedicated backend tunnel
-    ]
+    # Get CORS configuration from environment variables
+    cors_settings = get_cors_settings()
 
+    # Log warnings for production environments using defaults
+    if os.getenv("ENV", "development") == "production":
+        if not os.getenv("CORS_ORIGINS"):
+            logger.warning(
+                "Production environment detected but CORS_ORIGINS not set. "
+                "Using default origins which may not be secure for production."
+            )
+
+    # Add CORS middleware with environment-based configuration
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-        allow_origin_regex="http://localhost:[0-9]+"  # Allow any localhost port
+        allow_origins=cors_settings.origins,
+        allow_credentials=cors_settings.allow_credentials,
+        allow_methods=cors_settings.allow_methods,
+        allow_headers=cors_settings.allow_headers,
+        allow_origin_regex=cors_settings.origin_regex,
     )
 
     @app.get("/healthz")

@@ -75,6 +75,7 @@
 @media (max-width: 768px) {
   .admin-dashboard {
     gap: var(--space-6);
+    padding: 0 var(--space-4);
   }
 
   .admin-dashboard__stats {
@@ -83,7 +84,7 @@
   }
 
   .stat-card {
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-5);
 
     h3 {
       font-size: var(--font-size-xs);
@@ -96,7 +97,7 @@
 
   .admin-dashboard__recent,
   .admin-section {
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-5);
 
     h3 {
       font-size: var(--font-size-lg);
@@ -110,16 +111,25 @@
 }
 
 @media (max-width: 480px) {
+  .admin-dashboard {
+    padding: 0 var(--space-3);
+  }
+
   .admin-dashboard__stats {
     grid-template-columns: 1fr;
   }
 
   .stat-card {
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-5);
 
     p {
       font-size: var(--font-size-xl);
     }
+  }
+
+  .admin-dashboard__recent,
+  .admin-section {
+    padding: var(--space-4) var(--space-5);
   }
 
   .btn {
