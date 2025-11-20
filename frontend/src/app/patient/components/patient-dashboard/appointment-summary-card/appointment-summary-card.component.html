@@ -1,0 +1,109 @@
+<mat-card class="appointment-summary-card">
+  <div class="appointment-summary-card__header">
+    <div class="appointment-summary-card__time">
+      <div class="time-badge">
+        <mat-icon class="time-badge__icon">schedule</mat-icon>
+        <span class="time-badge__text">{{ timeDescription }}</span>
+      </div>
+      <div class="appointment-time">
+        <span class="appointment-time__hour">{{ formattedTime }}</span>
+      </div>
+    </div>
+
+    <div class="appointment-summary-card__status">
+      @switch (appointment().status) {
+        @case ('confirmed') {
+          <mat-chip color="primary" class="status-confirmed">
+            <mat-icon>check_circle</mat-icon>
+            Confirmado
+          </mat-chip>
+        }
+        @case ('pending') {
+          <mat-chip color="accent" class="status-pending">
+            <mat-icon>pending</mat-icon>
+            Pendiente
+          </mat-chip>
+        }
+        @case ('canceled') {
+          <mat-chip color="warn" class="status-canceled">
+            <mat-icon>cancel</mat-icon>
+            Cancelado
+          </mat-chip>
+        }
+        @case ('completed') {
+          <mat-chip color="primary" class="status-completed">
+            <mat-icon>done_all</mat-icon>
+            Completado
+          </mat-chip>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="appointment-summary-card__content">
+    <div class="doctor-info">
+      <div class="doctor-info__avatar">
+        <mat-icon class="doctor-avatar">person</mat-icon>
+      </div>
+      <div class="doctor-info__details">
+        <h3 class="doctor-info__name">{{ doctorFullName }}</h3>
+        <p class="doctor-info__specialty">{{ doctorSpecialty }}</p>
+      </div>
+    </div>
+
+    <div class="appointment-details">
+      <div class="appointment-details__location">
+        <mat-icon class="location-icon">location_on</mat-icon>
+        <span>{{ officeName }}</span>
+      </div>
+
+      @if (appointment().notes) {
+        <div class="appointment-details__notes">
+          <mat-icon class="notes-icon">note</mat-icon>
+          <span>{{ appointment().notes }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="appointment-summary-card__actions">
+    @switch (appointment().status) {
+      @case ('pending') {
+        <button mat-flat-button color="primary" class="action-button action-button--confirm">
+          <mat-icon>check</mat-icon>
+          Confirmar
+        </button>
+        <button mat-outline-button color="warn" class="action-button action-button--cancel">
+          <mat-icon>close</mat-icon>
+          Cancelar
+        </button>
+      }
+      @case ('confirmed') {
+        <button mat-flat-button color="primary" class="action-button action-button--reschedule">
+          <mat-icon>event</mat-icon>
+          Reagendar
+        </button>
+        <button mat-outline-button color="warn" class="action-button action-button--cancel">
+          <mat-icon>close</mat-icon>
+          Cancelar
+        </button>
+      }
+      @case ('completed') {
+        <button mat-flat-button color="primary" class="action-button action-button--new">
+          <mat-icon>add</mat-icon>
+          Nuevo Turno
+        </button>
+        <button mat-outline-button color="primary" class="action-button action-button--records">
+          <mat-icon>description</mat-icon>
+          Ver Historial
+        </button>
+      }
+      @case ('canceled') {
+        <button mat-flat-button color="primary" class="action-button action-button--new">
+          <mat-icon>add</mat-icon>
+          Solicitar Nuevo
+        </button>
+      }
+    }
+  </div>
+</mat-card>

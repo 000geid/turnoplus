@@ -6,7 +6,7 @@ This document contains the sample accounts created for testing the TurnoPlus app
 
 | Field | Value |
 |-------|-------|
-| ID | 9 |
+| ID | 1 |
 | Code | MAIN |
 | Name | Main Medical Center |
 | Address | 123 Health St, Medical City, MC 12345 |
@@ -17,7 +17,7 @@ This document contains the sample accounts created for testing the TurnoPlus app
 
 | Field | Value |
 |-------|-------|
-| User ID | 61 |
+| User ID | 5 |
 | Email | patient@example.com |
 | Password | patient123 |
 | Full Name | John Patient |
@@ -39,7 +39,7 @@ This document contains the sample accounts created for testing the TurnoPlus app
 | Specialty | General Practice |
 | Phone | 555-0202 |
 | Years of Experience | 10 |
-| Office ID | 9 |
+| Office ID | 1 |
 
 ---
 
@@ -47,13 +47,13 @@ This document contains the sample accounts created for testing the TurnoPlus app
 
 | Field | Value |
 |-------|-------|
-| User ID | 44 |
+| User ID | 4 |
 | Email | admin@example.com |
 | Password | admin123 |
 | Full Name | Admin User |
 | Role | System Administrator |
 | Permissions | user_management, office_management, system_settings |
-| Office ID | 9 |
+| Office ID | 1 |
 
 ---
 
@@ -61,8 +61,8 @@ This document contains the sample accounts created for testing the TurnoPlus app
 
 - These accounts are for testing purposes only
 - All passwords are simple for easy testing during development
-- The office ID 9 is associated with both the doctor and admin accounts
-- Patient account (ID: 61) was newly created, while doctor (ID: 3) and admin (ID: 44) accounts were existing
+- The office ID 1 is associated with both the doctor and admin accounts
+- Patient account (ID: 5) was newly created, while doctor (ID: 3) and admin (ID: 4) accounts were existing
 
 ## Quick Login Credentials
 

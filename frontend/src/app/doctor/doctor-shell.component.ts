@@ -6,15 +6,18 @@ import {
   inject,
   signal
 } from '@angular/core';
-import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { DatePipe, NgClass, CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
 import { ToastService } from '../shared/services/toast.service';
 import { AuthService } from '../core/services/auth.service';
 import { AppointmentsService } from '../core/services/appointments.service';
 import { MedicalRecordsService } from '../core/services/medical-records.service';
 import { DoctorsService } from '../core/services/doctors.service';
-import { AppointmentDto, AvailabilityDto } from '../core/models/appointment';
+import { AppointmentDto, AvailabilityDto, AppointmentStatus } from '../core/models/appointment';
 import { MedicalRecordDto, MedicalRecordUpdateRequest } from '../core/models/medical-record';
 import { PatientDto } from '../core/models/user';
 import {
@@ -26,12 +29,24 @@ import {
   DoctorRecordUpdateEvent,
   DoctorRecordsComponent
 } from './components/doctor-records/doctor-records.component';
-import { TabbedShellComponent, TabConfig } from '../shared/components/tabbed-shell/tabbed-shell.component';
+import {
+  DashboardSidebarComponent,
+  DashboardSidebarItem
+} from '../shared/components/dashboard-sidebar/dashboard-sidebar.component';
 
 @Component({
   selector: 'app-doctor-shell',
   standalone: true,
-  imports: [NgClass, DatePipe, TabbedShellComponent, DoctorAvailabilityComponent, DoctorRecordsComponent],
+  imports: [
+    CommonModule,
+    NgClass,
+    DatePipe,
+    MatIconModule,
+    MatButtonModule,
+    DashboardSidebarComponent,
+    DoctorAvailabilityComponent,
+    DoctorRecordsComponent
+  ],
   templateUrl: './doctor-shell.component.html',
   styleUrl: './doctor-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -43,6 +58,7 @@ export class DoctorShellComponent {
   private readonly doctorsService = inject(DoctorsService);
   private readonly toastService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   readonly doctorId: number | null;
   private readonly doctorGreeting = signal<string | null>(null);
@@ -67,6 +83,7 @@ export class DoctorShellComponent {
 
   readonly isSavingRecord = signal<boolean>(false);
   readonly recordMutationId = signal<number | null>(null);
+  readonly mobileSidebarOpen = signal<boolean>(false);
 
   readonly sortedAppointments = computed(() =>
     [...this.appointments()].sort(
@@ -75,6 +92,46 @@ export class DoctorShellComponent {
   );
 
   readonly doctorName = computed(() => this.doctorGreeting());
+  readonly currentRoute = computed(() => this.router.url.split('?')[0]);
+  readonly pendingAppointments = computed(
+    () => this.sortedAppointments().filter((apt) => apt.status === 'pending').length
+  );
+
+  readonly navigationItems = computed<DashboardSidebarItem[]>(() => [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: 'dashboard',
+      route: '/doctor/dashboard'
+    },
+    {
+      id: 'availability',
+      label: 'Disponibilidad',
+      icon: 'schedule',
+      route: '/doctor/availability'
+    },
+    {
+      id: 'appointments',
+      label: 'Mis Turnos',
+      icon: 'event',
+      route: '/doctor/appointments',
+      badge: this.pendingAppointments() || null
+    },
+    {
+      id: 'records',
+      label: 'Registros',
+      icon: 'medical_services',
+      route: '/doctor/records'
+    }
+  ]);
+
+  readonly globalError = computed(
+    () =>
+      this.appointmentsError() ||
+      this.availabilityError() ||
+      this.recordsError() ||
+      this.patientsError()
+  );
 
   // Enhanced computed properties for dashboard
   readonly greetingMessage = computed(() => {
@@ -167,15 +224,6 @@ export class DoctorShellComponent {
     return names;
   });
 
-  // Enhanced appointments with patient names
-  readonly appointmentsWithPatientNames = computed(() => {
-    const names = this.patientNames();
-    return this.sortedAppointments().map(apt => ({
-      ...apt,
-      patientName: names[apt.patient_id] || `Paciente #${apt.patient_id}`
-    }));
-  });
-
   // Map appointment IDs to patient names for template access
   readonly appointmentPatientNameMap = computed(() => {
     const names = this.patientNames();
@@ -185,28 +233,17 @@ export class DoctorShellComponent {
     }, {} as { [key: number]: string });
   });
 
-  readonly tabs: TabConfig[] = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: 'dashboard'
-    },
-    {
-      id: 'availability',
-      label: 'Disponibilidad',
-      icon: 'schedule'
-    },
-    {
-      id: 'appointments',
-      label: 'Mis Turnos',
-      icon: 'event'
-    },
-    {
-      id: 'records',
-      label: 'Registros Médicos',
-      icon: 'medical_services'
-    }
-  ];
+  readonly nextAppointment = computed(() => {
+    const now = new Date();
+    return this.sortedAppointments().find((apt) => new Date(apt.startAt) > now) ?? null;
+  });
+
+  readonly statusLabels: Record<AppointmentStatus, string> = {
+    pending: 'Pendiente',
+    confirmed: 'Confirmado',
+    canceled: 'Cancelado',
+    completed: 'Completado'
+  };
 
   constructor() {
     const currentUser = this.authService.user();
@@ -225,6 +262,26 @@ export class DoctorShellComponent {
     this.loadAvailability();
     this.loadRecords();
     this.loadPatients();
+  }
+
+  toggleMobileSidebar(): void {
+    this.mobileSidebarOpen.update((open) => !open);
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen.set(false);
+  }
+
+  onNavigation(route: string): void {
+    this.router.navigate([route]);
+    this.closeMobileSidebar();
+  }
+
+  dismissErrors(): void {
+    this.appointmentsError.set(null);
+    this.availabilityError.set(null);
+    this.recordsError.set(null);
+    this.patientsError.set(null);
   }
 
   refreshAppointments(): void {

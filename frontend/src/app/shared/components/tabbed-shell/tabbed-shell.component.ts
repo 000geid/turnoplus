@@ -68,9 +68,6 @@ export interface TabConfig {
               @if (tab.id === 'users') {
                 <ng-content select="[slot=users]"></ng-content>
               }
-              @if (tab.id === 'doctors') {
-                <ng-content select="[slot=doctors]"></ng-content>
-              }
               @if (tab.id === 'offices') {
                 <ng-content select="[slot=offices]"></ng-content>
               }

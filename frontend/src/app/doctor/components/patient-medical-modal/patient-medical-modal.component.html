@@ -32,45 +32,61 @@
           @if (loadingHistory()) {
             <p class="history-loading">Cargando historial...</p>
           } @else if (patientHistory().length === 0) {
-            <p class="history-empty">
-              Este paciente no tiene registros médicos aún.
-            </p>
+            <div class="history-empty">
+              <mat-icon fontIcon="history"></mat-icon>
+              <p>Este paciente no tiene registros médicos aún.</p>
+              <span>Usá la pestaña <strong>Nuevo Registro</strong> para comenzar el seguimiento.</span>
+            </div>
           } @else {
-            <div class="history-list">
+            <div class="history-timeline">
               @for (record of patientHistory(); track trackByRecordId($index, record)) {
-                <div class="history-item">
-                  <div class="history-item__header">
-                    <h4 class="history-item__date">
-                      {{ record.created_at | date: 'dd/MM/yyyy HH:mm' }}
-                    </h4>
-                    <span class="history-item__doctor">
-                      Dr. #{{ record.doctor_id }}
-                    </span>
+                <article class="timeline-item">
+                  <div class="timeline-marker"></div>
+                  <div class="timeline-card">
+                    <div class="timeline-card__meta">
+                      <div>
+                        <p class="meta-date">
+                          {{ record.created_at | date: "EEEE d 'de' MMMM':'':'es-ES" }}
+                        </p>
+                        <span class="meta-time">
+                          {{ record.created_at | date: 'HH:mm':undefined:'es-ES' }}
+                        </span>
+                      </div>
+                      <span class="meta-chip">
+                        Dr. #{{ record.doctor_id }}
+                      </span>
+                    </div>
+
+                    <div class="timeline-card__content">
+                      @if (record.diagnosis) {
+                        <div class="timeline-field">
+                          <span class="field-label">Diagnóstico</span>
+                          <p class="field-value">{{ record.diagnosis }}</p>
+                        </div>
+                      }
+
+                      @if (record.treatment) {
+                        <div class="timeline-field">
+                          <span class="field-label">Tratamiento</span>
+                          <p class="field-value">{{ record.treatment }}</p>
+                        </div>
+                      }
+
+                      @if (record.notes) {
+                        <div class="timeline-field">
+                          <span class="field-label">Notas</span>
+                          <p class="field-value">{{ record.notes }}</p>
+                        </div>
+                      }
+
+                      @if (!record.diagnosis && !record.treatment && !record.notes) {
+                        <p class="field-empty">
+                          Este registro no contiene detalles adicionales.
+                        </p>
+                      }
+                    </div>
                   </div>
-                  
-                  <div class="history-item__content">
-                    @if (record.diagnosis) {
-                      <div class="history-item__field">
-                        <strong>Diagnóstico:</strong>
-                        <p>{{ record.diagnosis }}</p>
-                      </div>
-                    }
-                    
-                    @if (record.treatment) {
-                      <div class="history-item__field">
-                        <strong>Tratamiento:</strong>
-                        <p>{{ record.treatment }}</p>
-                      </div>
-                    }
-                    
-                    @if (record.notes) {
-                      <div class="history-item__field">
-                        <strong>Notas:</strong>
-                        <p>{{ record.notes }}</p>
-                      </div>
-                    }
-                  </div>
-                </div>
+                </article>
               }
             </div>
           }
@@ -79,6 +95,9 @@
 
       @if (activeTab() === 'new') {
         <div class="new-record-tab">
+          <p class="new-record-helper">
+            Registrá diagnósticos, tratamientos y observaciones clave para mantener actualizado el historial del paciente.
+          </p>
           <form [formGroup]="newRecordForm" (ngSubmit)="onSubmitNewRecord()">
             <div class="form-group">
               <label>

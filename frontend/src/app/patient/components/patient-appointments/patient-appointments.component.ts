@@ -19,6 +19,7 @@ import { DoctorDto } from '../../../core/models/user';
 export class PatientAppointmentsComponent {
   private _appointments: ReadonlyArray<AppointmentDto> = [];
   private doctorCache = new Map<number, DoctorDto>();
+  private readonly doctorNames = signal<Record<number, string>>({});
 
   @Input()
   set appointments(value: ReadonlyArray<AppointmentDto>) {
@@ -106,8 +107,12 @@ export class PatientAppointmentsComponent {
   }
 
   getDoctorName(doctorId: number): string {
+    const names = this.doctorNames();
+    if (names[doctorId]) {
+      return names[doctorId];
+    }
     const doctor = this.doctorCache.get(doctorId);
-    return doctor?.full_name || `Doctor #${doctorId}`;
+    return doctor?.full_name || doctor?.email || `Doctor #${doctorId}`;
   }
 
   formatDateSpanish(dateString: string): string {
@@ -137,15 +142,32 @@ export class PatientAppointmentsComponent {
     const uniqueDoctorIds = [...new Set(this._appointments.map(a => a.doctor_id))];
     
     for (const doctorId of uniqueDoctorIds) {
-      if (!this.doctorCache.has(doctorId)) {
-        try {
-          const doctor = await firstValueFrom(this.doctorService.getDoctor(doctorId));
-          this.doctorCache.set(doctorId, doctor);
-        } catch (error) {
-          console.error(`Error fetching doctor ${doctorId}:`, error);
-          // Set a placeholder to avoid repeated failed requests
-          this.doctorCache.set(doctorId, { id: doctorId, full_name: `Doctor #${doctorId}`, email: '', is_active: false, is_superuser: false, role: 'doctor' } as DoctorDto);
-        }
+      if (this.doctorNames()[doctorId]) {
+        continue;
+      }
+      try {
+        const doctor = await firstValueFrom(this.doctorService.getDoctor(doctorId));
+        this.doctorCache.set(doctorId, doctor);
+        const displayName = doctor.full_name || doctor.email || `Doctor #${doctorId}`;
+        this.doctorNames.update((names) => ({
+          ...names,
+          [doctorId]: displayName
+        }));
+      } catch (error) {
+        console.error(`Error fetching doctor ${doctorId}:`, error);
+        const fallback = `Doctor #${doctorId}`;
+        this.doctorCache.set(doctorId, {
+          id: doctorId,
+          full_name: fallback,
+          email: '',
+          is_active: false,
+          is_superuser: false,
+          role: 'doctor'
+        } as DoctorDto);
+        this.doctorNames.update((names) => ({
+          ...names,
+          [doctorId]: fallback
+        }));
       }
     }
   }

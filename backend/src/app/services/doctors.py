@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Iterator
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, distinct
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -169,14 +169,24 @@ class DoctorsService:
     def get_patients_for_doctor(self, doctor_id: int) -> list[Patient]:
         """Get all patients that have had appointments with this doctor."""
         with self._session_scope() as session:
-            # Get patient details with user info, ordered by most recent appointment
+            # Fixed query to handle MySQL DISTINCT with ORDER BY limitation
+            # First get distinct patient IDs with their latest appointment time
+            subquery = (
+                select(
+                    AppointmentModel.patient_id,
+                    func.max(AppointmentModel.start_at).label('latest_appointment')
+                )
+                .where(AppointmentModel.doctor_id == doctor_id)
+                .group_by(AppointmentModel.patient_id)
+                .subquery()
+            )
+            
+            # Then join with patients and order by the latest appointment time
             stmt = (
                 select(PatientModel)
                 .options(joinedload(PatientModel.user))
-                .join(AppointmentModel, PatientModel.id == AppointmentModel.patient_id)
-                .where(AppointmentModel.doctor_id == doctor_id)
-                .order_by(AppointmentModel.start_at.desc())
-                .distinct()
+                .join(subquery, PatientModel.id == subquery.c.patient_id)
+                .order_by(subquery.c.latest_appointment.desc())
             )
             patients = session.scalars(stmt).all()
             return [self._patient_to_schema(patient) for patient in patients if patient.user]
@@ -186,21 +196,30 @@ class DoctorsService:
         with self._session_scope() as session:
             # Get total count
             count_stmt = (
-                select(func.count(PatientModel.id))
+                select(func.count(distinct(PatientModel.id)))
                 .join(AppointmentModel, PatientModel.id == AppointmentModel.patient_id)
                 .where(AppointmentModel.doctor_id == doctor_id)
-                .distinct()
             )
             total = session.scalar(count_stmt) or 0
             
-            # Get paginated patients
+            # Fixed query to handle MySQL DISTINCT with ORDER BY limitation
+            # First get distinct patient IDs with their latest appointment time
+            subquery = (
+                select(
+                    AppointmentModel.patient_id,
+                    func.max(AppointmentModel.start_at).label('latest_appointment')
+                )
+                .where(AppointmentModel.doctor_id == doctor_id)
+                .group_by(AppointmentModel.patient_id)
+                .subquery()
+            )
+            
+            # Then join with patients and order by the latest appointment time
             stmt = (
                 select(PatientModel)
                 .options(joinedload(PatientModel.user))
-                .join(AppointmentModel, PatientModel.id == AppointmentModel.patient_id)
-                .where(AppointmentModel.doctor_id == doctor_id)
-                .order_by(AppointmentModel.start_at.desc())
-                .distinct()
+                .join(subquery, PatientModel.id == subquery.c.patient_id)
+                .order_by(subquery.c.latest_appointment.desc())
             )
             
             # Apply pagination

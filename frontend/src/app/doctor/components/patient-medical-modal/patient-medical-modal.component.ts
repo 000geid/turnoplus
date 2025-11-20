@@ -10,7 +10,9 @@ import {
   DestroyRef
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NgFor, NgIf, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ToastService } from '../../../shared/services/toast.service';
@@ -25,7 +27,7 @@ export interface PatientMedicalModalCloseEvent {
 @Component({
   selector: 'app-patient-medical-modal',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, MatIconModule],
   templateUrl: './patient-medical-modal.component.html',
   styleUrl: './patient-medical-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

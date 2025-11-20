@@ -1,0 +1,33 @@
+<aside class="dashboard-sidebar" [class.mobile-open]="mobileOpen">
+  <nav class="sidebar-nav">
+    <mat-list class="nav-list">
+      @for (item of items; track item.id) {
+        <a
+          mat-list-item
+          class="nav-item"
+          [routerLink]="item.route"
+          [class.nav-item--active]="isActive(item)"
+          (click)="onNavigation(item.route)"
+          [matTooltip]="mobileOpen ? '' : item.label"
+          matTooltipPosition="right"
+        >
+          <div class="nav-item-content">
+            <div class="nav-item-icon">
+              <mat-icon>{{ item.icon }}</mat-icon>
+            </div>
+            @if (mobileOpen) {
+              <div class="nav-item-text">
+                <span class="nav-item-label">{{ item.label }}</span>
+              </div>
+            }
+            @if (item.badge && item.badge > 0) {
+              <div class="nav-item-badge">
+                <span class="badge-count">{{ item.badge }}</span>
+              </div>
+            }
+          </div>
+        </a>
+      }
+    </mat-list>
+  </nav>
+</aside>

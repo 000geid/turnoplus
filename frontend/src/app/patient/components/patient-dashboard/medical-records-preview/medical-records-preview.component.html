@@ -1,0 +1,92 @@
+<mat-card class="medical-records-preview">
+  <div class="medical-records-preview__header">
+    <div class="header-content">
+      <mat-icon class="header-icon">medical_services</mat-icon>
+      <div class="header-text">
+        <h3>Historial Médico</h3>
+        <p>Registros recientes de consultas</p>
+      </div>
+    </div>
+
+    <div class="header-stats">
+      <span class="records-count">{{ records().length }} registros</span>
+      <button mat-icon-button (click)="viewAll.emit()" class="view-all-button">
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="medical-records-preview__content">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Cargando historial médico...</p>
+      </div>
+    } @else if (hasAnyContent()) {
+      <div class="records-list">
+        @for (record of records(); track record.id) {
+          <div class="record-item">
+            <div class="record-item__date">
+              <div class="date-badge">
+                {{ record.created_at | date:'d' }}
+              </div>
+              <div class="date-month">
+                {{ record.created_at | date:'MMM' }}
+              </div>
+            </div>
+
+            <div class="record-item__content">
+              <div class="record-header">
+                <h4 class="doctor-name">{{ getDoctorFullName(record) }}</h4>
+                <span class="record-date">{{ getFormattedDate(record.created_at) }}</span>
+              </div>
+
+              @if (record.diagnosis) {
+                <div class="diagnosis">
+                  <mat-icon class="diagnosis-icon">healing</mat-icon>
+                  <span class="diagnosis-text">{{ getDiagnosisSummary(record.diagnosis) }}</span>
+                </div>
+              }
+
+              @if (record.notes) {
+                <div class="notes">
+                  <mat-icon class="notes-icon">note</mat-icon>
+                  <span class="notes-text">{{ getPreviewText(record.notes) }}</span>
+                </div>
+              }
+
+              @if (record.treatment) {
+                <div class="treatment">
+                  <mat-icon class="treatment-icon">medication</mat-icon>
+                  <span class="treatment-text">Tratamiento indicado</span>
+                </div>
+              }
+            </div>
+
+            <div class="record-item__arrow">
+              <mat-icon>chevron_right</mat-icon>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="empty-state">
+        <mat-icon class="empty-icon">folder_open</mat-icon>
+        <h4>No hay registros médicos</h4>
+        <p>Tu historial médico aparecerá aquí después de tus consultas</p>
+        <button mat-stroked-button color="primary" (click)="viewAll.emit()">
+          Ver historial completo
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (hasAnyContent() && !isLoading()) {
+    <div class="medical-records-preview__footer">
+      <button mat-button color="primary" (click)="viewAll.emit()" class="view-all-button">
+        Ver todo el historial
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </div>
+  }
+</mat-card>

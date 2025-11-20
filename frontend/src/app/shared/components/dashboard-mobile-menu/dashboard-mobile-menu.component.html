@@ -1,0 +1,28 @@
+<div class="mobile-menu-overlay" (click)="onOverlayClick()">
+  <div class="mobile-menu-panel" (click)="$event.stopPropagation()">
+    <div class="mobile-menu-header">
+      <h3>Navegación</h3>
+      <button type="button" class="close-button" (click)="onOverlayClick()" aria-label="Cerrar menú">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <ul class="mobile-menu-list">
+      @for (item of items; track item.id) {
+        <li>
+          <button type="button" class="mobile-menu-item" [class.active]="isActive(item.route)" (click)="onNavigate(item.route)">
+            <div class="mobile-menu-item__icon">
+              <mat-icon>{{ item.icon }}</mat-icon>
+            </div>
+            <div class="mobile-menu-item__text">
+              <span class="label">{{ item.label }}</span>
+              @if (item.badge && item.badge > 0) {
+                <span class="badge">{{ item.badge }}</span>
+              }
+            </div>
+          </button>
+        </li>
+      }
+    </ul>
+  </div>
+</div>

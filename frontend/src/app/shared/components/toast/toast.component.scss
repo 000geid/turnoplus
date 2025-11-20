@@ -79,7 +79,6 @@
 .mat-mdc-snack-bar-container {
   --mdc-snackbar-supporting-text-color: inherit;
   padding: 0 !important;
-  background: transparent !important;
   box-shadow: none !important;
   border-radius: 0 !important;
   filter: none !important;
@@ -104,7 +103,6 @@
     .cdk-overlay-pane {
       .mat-mdc-snack-bar-container {
         padding: 0 !important;
-        background: transparent !important;
         box-shadow: none !important;
         border-radius: 0 !important;
         filter: none !important;
@@ -129,7 +127,6 @@
   .cdk-overlay-pane {
     filter: none !important;
     backdrop-filter: none !important;
-    background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     margin: 0 !important;
@@ -139,7 +136,6 @@
   // Target Material snackbar specific containers
   .mat-mdc-snack-bar-container,
   .mat-mdc-simple-snack-bar {
-    background: transparent !important;
     box-shadow: none !important;
     border: none !important;
     filter: none !important;

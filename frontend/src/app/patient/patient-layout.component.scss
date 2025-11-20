@@ -1,0 +1,9 @@
+@use '../shared/styles/dashboard-layout';
+
+:host {
+  display: block;
+}
+
+.patient-layout {
+  width: 100%;
+}

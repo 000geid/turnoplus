@@ -1,0 +1,85 @@
+<div class="dashboard-layout admin-layout">
+  <header class="mobile-header">
+    <button
+      mat-icon-button
+      class="mobile-menu-button"
+      (click)="toggleMobileSidebar()"
+      [attr.aria-label]="mobileSidebarOpen() ? 'Cerrar menú' : 'Abrir menú'"
+    >
+      <mat-icon>{{ mobileSidebarOpen() ? 'close' : 'menu' }}</mat-icon>
+    </button>
+
+    <div class="mobile-header__content">
+      <h1 class="mobile-header__title">Administración</h1>
+      <p class="mobile-header__subtitle">Gestioná usuarios y consultorios</p>
+    </div>
+  </header>
+
+  @if (mobileSidebarOpen()) {
+    <div class="mobile-sidebar-overlay" (click)="closeMobileSidebar()"></div>
+  }
+
+  <app-dashboard-sidebar
+    [items]="navigationItems"
+    [activeRoute]="currentRoute()"
+    [mobileOpen]="mobileSidebarOpen()"
+    (navigate)="onNavigation($event)"
+  ></app-dashboard-sidebar>
+
+  <main class="dashboard-main">
+    <div class="content-area">
+      @if (currentRoute() === '/admin/dashboard') {
+        <div class="section-container">
+          <div class="section-header">
+            <h2>Panel general</h2>
+            <p>Resumen de actividad del sistema</p>
+          </div>
+          <div class="admin-dashboard">
+            <div class="admin-dashboard__stats">
+              @for (stat of dashboardStats; track stat.label) {
+                <div class="stat-card">
+                  <h3>{{ stat.label }}</h3>
+                  <p class="stat-number">{{ stat.value }}</p>
+                </div>
+              }
+            </div>
+            <div class="admin-dashboard__recent">
+              <h3>Actividad reciente</h3>
+              <p class="placeholder">No hay actividad reciente para mostrar por ahora.</p>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (currentRoute() === '/admin/users') {
+        <div class="section-container">
+          <div class="section-header">
+            <h2>Usuarios</h2>
+            <p>Gestioná pacientes, doctores y administradores</p>
+          </div>
+          <app-unified-user-management></app-unified-user-management>
+        </div>
+      }
+
+      @if (currentRoute() === '/admin/offices') {
+        <div class="section-container">
+          <div class="section-header">
+            <h2>Consultorios</h2>
+            <p>Administrá oficinas y horarios</p>
+          </div>
+          <app-office-management></app-office-management>
+        </div>
+      }
+
+      @if (currentRoute() === '/admin/settings') {
+        <div class="section-container">
+          <div class="section-header">
+            <h2>Configuración</h2>
+            <p>Bloques y preferencias generales</p>
+          </div>
+          <app-system-settings></app-system-settings>
+        </div>
+      }
+    </div>
+  </main>
+</div>

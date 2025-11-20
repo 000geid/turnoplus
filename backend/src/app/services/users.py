@@ -90,6 +90,16 @@ class UsersService:
         self._session.flush()
         return True
 
+    def authenticate(self, email: str, password: str) -> Optional[User]:
+        model = self._session.scalar(
+            select(UserModel).where(UserModel.email == email)
+        )
+        if not model or not model.is_active:
+            return None
+        if not verify_password(password, model.password_hash):
+            return None
+        
+        return self._to_schema(model)
     # ------------------------------------------------------------------
     def authenticate(self, email: str, password: str) -> Optional[User]:
         model = self._session.scalar(
