@@ -18,6 +18,8 @@ def create_app() -> FastAPI:
         "http://127.0.0.1:8080",     # Common alternative port
         "http://localhost:3000",     # Create React App default
         "http://127.0.0.1:3000",     # Create React App default
+        "https://molly-artistic-bat.ngrok-free.app",  # Ngrok tunnel for external access
+        "https://backend-tunnel.ogeid.xyz",  # Dedicated backend tunnel
     ]
 
     app.add_middleware(

@@ -10,7 +10,6 @@ import { UserDto, DoctorDto, PatientDto } from '../../../core/models/user';
 import { Office } from '../../../core/models/office';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { PaginationParams, PaginatedResponse, defaultPaginationParams } from '../../../core/models/pagination';
-import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
@@ -66,7 +65,6 @@ type UserRoleFilter = 'all' | 'patient' | 'doctor' | 'admin';
     CommonModule, 
     FormsModule, 
     PaginationComponent,
-    MatSelectModule,
     MatFormFieldModule,
     MatInputModule,
     MatIconModule
@@ -199,6 +197,14 @@ export class UnifiedUserManagementComponent implements OnInit {
 
   onRoleFilterChange(): void {
     this.applyFilters();
+  }
+
+  setRoleFilter(role: UserRoleFilter): void {
+    if (this.roleFilter === role) {
+      return;
+    }
+    this.roleFilter = role;
+    this.onRoleFilterChange();
   }
 
   onSearchChange(): void {

@@ -7,31 +7,33 @@
 .topbar {
   background: var(--brand-700);
   color: #ffffff;
-  padding: 1.1rem 0;
-  box-shadow: 0 6px 20px rgba(8, 38, 44, 0.18);
+  padding: 0.6rem 0;
+  box-shadow: 0 4px 15px rgba(8, 38, 44, 0.18);
 }
 
 .topbar__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  padding: 0 1.5rem;
 }
 
 .brand {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  min-width: 0;
 }
 
 .brand__mark {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 .brand__tagline {
-  font-size: 0.875rem;
+  font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.78);
 }
 
@@ -54,7 +56,14 @@
 .topbar__user {
   font-weight: 500;
   color: rgba(255, 255, 255, 0.9);
-  margin-right: 0.5rem;
+}
+
+.topbar__logout-text {
+  display: inline;
+}
+
+.topbar__logout-icon {
+  display: none;
 }
 
 .app-shell {
@@ -68,52 +77,6 @@
   margin-top: var(--space-4);
   border-radius: var(--space-2);
 }
-.app-shell {
-  flex: 1;
-  width: 100%;
-  padding: 1.25rem 0 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  background: var(--color-surface);
-}
-.app-shell {
-  flex: 1;
-  width: 100%;
-  padding: 1.25rem 0 2rem;
-@media (max-width: 640px) {
-  .topbar__inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .app-shell {
-    padding-top: 2rem;
-    margin-top: var(--space-6);
-    border-radius: var(--space-1);
-  }
-
-  .app-footer__inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  background: var(--color-surface);
-  border-radius: var(--space-3);
-  box-shadow: var(--shadow-md);
-}
-.app-shell {
-  flex: 1;
-  width: 100%;
-  padding: 1.25rem 0 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
 
 .app-footer {
   padding: 1.5rem 0;
@@ -128,15 +91,52 @@
   color: var(--gray-600);
 }
 
-
 @media (max-width: 640px) {
+  .topbar {
+    padding: 0.45rem 0;
+  }
+
   .topbar__inner {
-    flex-direction: column;
-    align-items: flex-start;
+    gap: 0.8rem;
+    padding: 0 1rem;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+  }
+
+  .brand__mark {
+    font-size: 1.1rem;
+  }
+
+  .brand__tagline {
+    display: none;
+  }
+
+  .topbar__nav {
+    gap: 0.4rem;
+  }
+
+  .topbar__user {
+    display: none;
+  }
+
+  .topbar__logout-text {
+    display: none;
+  }
+
+  .topbar__logout-icon {
+    display: inline-flex;
+  }
+
+  .btn.btn-secondary {
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.35rem;
   }
 
   .app-shell {
-    padding-top: 2rem;
+    padding-top: 1rem;
+    margin-top: var(--space-4);
+    border-radius: var(--space-1);
   }
 
   .app-footer__inner {

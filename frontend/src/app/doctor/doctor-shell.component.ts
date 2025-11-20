@@ -33,6 +33,7 @@ import {
   DashboardSidebarComponent,
   DashboardSidebarItem
 } from '../shared/components/dashboard-sidebar/dashboard-sidebar.component';
+import { DashboardMobileMenuComponent } from '../shared/components/dashboard-mobile-menu/dashboard-mobile-menu.component';
 
 @Component({
   selector: 'app-doctor-shell',
@@ -44,6 +45,7 @@ import {
     MatIconModule,
     MatButtonModule,
     DashboardSidebarComponent,
+    DashboardMobileMenuComponent,
     DoctorAvailabilityComponent,
     DoctorRecordsComponent
   ],

@@ -1,26 +1,14 @@
 <div class="dashboard-layout patient-layout">
-  <!-- Mobile Header -->
-  <header class="mobile-header">
-    <button
-      mat-icon-button
-      class="mobile-menu-button"
-      (click)="toggleMobileSidebar()"
-      [attr.aria-label]="mobileSidebarOpen() ? 'Cerrar menú' : 'Abrir menú'"
-    >
-      <mat-icon>{{ mobileSidebarOpen() ? 'close' : 'menu' }}</mat-icon>
-    </button>
-
-    <div class="mobile-header__content">
-      <h1 class="mobile-header__title">Turnos</h1>
-      <p class="mobile-header__subtitle">Gestión de turnos</p>
-    </div>
-  </header>
+  <button
+    mat-icon-button
+    class="floating-menu-btn"
+    (click)="toggleMobileSidebar()"
+    [attr.aria-label]="mobileSidebarOpen() ? 'Cerrar menú' : 'Abrir menú'"
+  >
+    <mat-icon>{{ mobileSidebarOpen() ? 'close' : 'menu' }}</mat-icon>
+  </button>
 
   <!-- Mobile Sidebar Overlay -->
-  @if (mobileSidebarOpen()) {
-    <div class="mobile-sidebar-overlay" (click)="closeMobileSidebar()"></div>
-  }
-
   <!-- Sidebar -->
   <app-dashboard-sidebar
     [items]="navigationItems()"
@@ -28,6 +16,15 @@
     (navigate)="onNavigation($event)"
     [mobileOpen]="mobileSidebarOpen()"
   ></app-dashboard-sidebar>
+
+  @if (mobileSidebarOpen()) {
+    <app-dashboard-mobile-menu
+      [items]="navigationItems()"
+      [activeRoute]="currentRoute()"
+      (navigate)="onNavigation($event)"
+      (close)="closeMobileSidebar()"
+    ></app-dashboard-mobile-menu>
+  }
 
   <!-- Main Content Area -->
   <main class="dashboard-main">

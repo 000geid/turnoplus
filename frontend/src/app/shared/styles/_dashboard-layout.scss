@@ -4,6 +4,18 @@
   background: #fafafa;
 }
 
+.floating-menu-btn {
+  position: fixed;
+  left: 1rem;
+  bottom: 1.25rem;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+  border-radius: 999px;
+  z-index: 1400;
+  display: none;
+}
+
 .mobile-header {
   display: none;
   align-items: center;
@@ -58,10 +70,12 @@
 
 .dashboard-main {
   flex: 1;
-  margin-left: 60px;
+  margin: 0 auto;
+  width: min(1200px, calc(100% - 120px));
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  padding-top: 0;
 }
 
 .error-banner {
@@ -89,7 +103,7 @@
 
 .content-area {
   flex: 1;
-  padding: 0.75rem;
+  padding: 0;
 }
 
 .section-container {
@@ -120,32 +134,25 @@
 }
 
 @media (max-width: 1024px) {
-  .mobile-header {
-    display: flex;
+  .dashboard-main {
+    width: 100%;
+    padding: 0.25rem 0 1rem;
   }
 
-  .dashboard-main {
-    margin-left: 0;
-    margin-top: 60px;
+  .floating-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .content-area {
-    padding: 0.625rem;
+    padding: 0.25rem;
   }
 }
 
 @media (max-width: 768px) {
-  .mobile-header {
-    display: flex;
-  }
-
-  .dashboard-main {
-    margin-left: 0;
-    margin-top: 60px;
-  }
-
   .content-area {
-    padding: 0.5rem;
+    padding: 0.25rem;
   }
 
   .section-header {

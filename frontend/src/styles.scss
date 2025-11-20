@@ -357,6 +357,41 @@ button {
 
   &.badge-muted {
     background: var(--color-secondary-light);
+// Custom tooltip class for enhanced directive
+.app-tooltip {
+  background-color: var(--brand-700) !important;
+  color: white !important;
+  border-radius: var(--space-1) !important;
+  font-weight: var(--font-weight-medium) !important;
+}
+// Enhanced tooltip system with brand styling
+.mat-mdc-tooltip {
+  background-color: var(--brand-700) !important;
+  color: white !important;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--space-1);
+  box-shadow: var(--shadow-lg);
+  border: none !important;
+  max-width: 300px;
+  word-wrap: break-word;
+  white-space: pre-line;
+}
+
+// Tooltip arrow styling
+.mat-mdc-tooltip-panel {
+  .mdc-tooltip__surface {
+    background-color: var(--brand-700) !important;
+    color: white !important;
+  }
+}
+
+// Ensure tooltip text is readable
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  color: white !important;
+  font-family: var(--font-sans);
+}
     color: var(--color-text-muted);
   }
 }

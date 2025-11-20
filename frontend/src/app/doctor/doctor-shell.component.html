@@ -1,25 +1,12 @@
 <div class="dashboard-layout doctor-layout">
-  <header class="mobile-header">
-    <button
-      mat-icon-button
-      class="mobile-menu-button"
-      (click)="toggleMobileSidebar()"
-      [attr.aria-label]="mobileSidebarOpen() ? 'Cerrar menú' : 'Abrir menú'"
-    >
-      <mat-icon>{{ mobileSidebarOpen() ? 'close' : 'menu' }}</mat-icon>
-    </button>
-
-    <div class="mobile-header__content">
-      <h1 class="mobile-header__title">Agenda del profesional</h1>
-      <p class="mobile-header__subtitle">
-        {{ doctorName() ? ('Bienvenido, ' + doctorName() + '.') : 'Gestioná tus turnos y fichas clínicas.' }}
-      </p>
-    </div>
-  </header>
-
-  @if (mobileSidebarOpen()) {
-    <div class="mobile-sidebar-overlay" (click)="closeMobileSidebar()"></div>
-  }
+  <button
+    mat-icon-button
+    class="floating-menu-btn"
+    (click)="toggleMobileSidebar()"
+    [attr.aria-label]="mobileSidebarOpen() ? 'Cerrar menú' : 'Abrir menú'"
+  >
+    <mat-icon>{{ mobileSidebarOpen() ? 'close' : 'menu' }}</mat-icon>
+  </button>
 
   <app-dashboard-sidebar
     [items]="navigationItems()"
@@ -27,6 +14,15 @@
     [mobileOpen]="mobileSidebarOpen()"
     (navigate)="onNavigation($event)"
   ></app-dashboard-sidebar>
+
+  @if (mobileSidebarOpen()) {
+    <app-dashboard-mobile-menu
+      [items]="navigationItems()"
+      [activeRoute]="currentRoute()"
+      (navigate)="onNavigation($event)"
+      (close)="closeMobileSidebar()"
+    ></app-dashboard-mobile-menu>
+  }
 
   <main class="dashboard-main">
     @if (globalError()) {

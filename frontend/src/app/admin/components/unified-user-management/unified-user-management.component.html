@@ -1,6 +1,10 @@
 <div class="unified-user-management">
-  <div class="unified-user-management__header">
-    <h2>Gestión de Usuarios</h2>
+  <div class="page-header">
+    <div class="page-header__titles">
+      <p class="page-eyebrow">Usuarios</p>
+      <h2>Gestión de Usuarios</h2>
+      <p>Gestioná pacientes, doctores y administradores.</p>
+    </div>
     <button
       class="btn btn-primary"
       (click)="showCreateUserForm()"
@@ -10,73 +14,43 @@
     </button>
   </div>
 
-  <!-- Stats Cards -->
-  <div class="stats-container">
-    <div class="stat-card" [class.active]="roleFilter === 'all'" (click)="roleFilter = 'all'; onRoleFilterChange()">
-      <div class="stat-card__icon">
-        <i class="material-icons">people</i>
-      </div>
-      <div class="stat-card__content">
-        <h3>Total</h3>
-        <p class="stat-number">{{ getStats()['total'] }}</p>
-      </div>
-    </div>
-    
-    <div class="stat-card" [class.active]="roleFilter === 'patient'" (click)="roleFilter = 'patient'; onRoleFilterChange()">
-      <div class="stat-card__icon patient">
-        <i class="material-icons">person</i>
-      </div>
-      <div class="stat-card__content">
-        <h3>Pacientes</h3>
-        <p class="stat-number">{{ getStats()['patients'] }}</p>
-      </div>
-    </div>
-    
-    <div class="stat-card" [class.active]="roleFilter === 'doctor'" (click)="roleFilter = 'doctor'; onRoleFilterChange()">
-      <div class="stat-card__icon doctor">
-        <i class="material-icons">medical_services</i>
-      </div>
-      <div class="stat-card__content">
-        <h3>Doctores</h3>
-        <p class="stat-number">{{ getStats()['doctors'] }}</p>
-      </div>
-    </div>
-    
-    <div class="stat-card" [class.active]="roleFilter === 'admin'" (click)="roleFilter = 'admin'; onRoleFilterChange()">
-      <div class="stat-card__icon admin">
-        <i class="material-icons">admin_panel_settings</i>
-      </div>
-      <div class="stat-card__content">
-        <h3>Administradores</h3>
-        <p class="stat-number">{{ getStats()['admins'] }}</p>
-      </div>
-    </div>
+  <!-- Filter chips -->
+  <div class="role-chips">
+    <button type="button" class="role-chip" [class.active]="roleFilter === 'all'" (click)="setRoleFilter('all')">
+      <i class="material-icons">all_inclusive</i>
+      <span class="label">Todos</span>
+      <span class="count">{{ getStats()['total'] }}</span>
+    </button>
+    <button type="button" class="role-chip" [class.active]="roleFilter === 'patient'" (click)="setRoleFilter('patient')">
+      <i class="material-icons">person</i>
+      <span class="label">Pacientes</span>
+      <span class="count">{{ getStats()['patients'] }}</span>
+    </button>
+    <button type="button" class="role-chip" [class.active]="roleFilter === 'doctor'" (click)="setRoleFilter('doctor')">
+      <i class="material-icons">medical_services</i>
+      <span class="label">Doctores</span>
+      <span class="count">{{ getStats()['doctors'] }}</span>
+    </button>
+    <button type="button" class="role-chip" [class.active]="roleFilter === 'admin'" (click)="setRoleFilter('admin')">
+      <i class="material-icons">admin_panel_settings</i>
+      <span class="label">Administradores</span>
+      <span class="count">{{ getStats()['admins'] }}</span>
+    </button>
   </div>
 
-  <!-- Search and Filter Bar -->
+  <!-- Search Bar -->
   <div class="filter-bar">
-    <div class="filter-bar__search">
-      <mat-form-field appearance="outline" class="search-field">
-        <mat-label>Buscar usuarios...</mat-label>
-        <mat-icon matPrefix>search</mat-icon>
-        <input matInput 
-               [(ngModel)]="searchQuery" 
-               (ngModelChange)="onSearchChange()"
-               placeholder="Buscar por email, nombre, especialidad...">
-      </mat-form-field>
-    </div>
-    
-    <div class="filter-bar__role">
-      <mat-form-field appearance="outline">
-        <mat-label>Filtrar por rol</mat-label>
-        <mat-select [(value)]="roleFilter" (selectionChange)="onRoleFilterChange()">
-          <mat-option value="all">Todos los roles</mat-option>
-          <mat-option value="patient">Pacientes</mat-option>
-          <mat-option value="doctor">Doctores</mat-option>
-          <mat-option value="admin">Administradores</mat-option>
-        </mat-select>
-      </mat-form-field>
-    </div>
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Buscar usuarios...</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput
+             [(ngModel)]="searchQuery"
+             (ngModelChange)="onSearchChange()"
+             placeholder="Buscar por email, nombre, especialidad...">
+      <button matSuffix mat-icon-button type="button" *ngIf="searchQuery" (click)="searchQuery = ''; onSearchChange()" aria-label="Limpiar búsqueda">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
   </div>
 
   <!-- Error message -->

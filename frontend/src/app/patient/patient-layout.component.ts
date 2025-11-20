@@ -20,6 +20,7 @@ import {
   DashboardSidebarComponent,
   DashboardSidebarItem
 } from '../shared/components/dashboard-sidebar/dashboard-sidebar.component';
+import { DashboardMobileMenuComponent } from '../shared/components/dashboard-mobile-menu/dashboard-mobile-menu.component';
 
 @Component({
   selector: 'app-patient-layout',
@@ -29,6 +30,7 @@ import {
     MatIconModule,
     MatButtonModule,
     DashboardSidebarComponent,
+    DashboardMobileMenuComponent,
     PatientProfileComponent,
     PatientAppointmentsComponent,
     PatientBookingComponent,
