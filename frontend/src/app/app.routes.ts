@@ -18,21 +18,21 @@ export const routes: Routes = [
     canMatch: [authCanMatchGuard, roleCanMatchGuard],
     canActivate: [authCanActivateGuard, roleCanActivateGuard],
     data: { roles: ['patient', 'user'] },
-    loadComponent: () => import('./patient/patient-shell.component').then((m) => m.PatientShellComponent)
+    loadChildren: () => import('./patient/patient.routes').then((m) => m.patientRoutes)
   },
   {
     path: 'doctor',
     canMatch: [authCanMatchGuard, roleCanMatchGuard],
     canActivate: [authCanActivateGuard, roleCanActivateGuard],
     data: { roles: ['doctor'] },
-    loadComponent: () => import('./doctor/doctor-shell.component').then((m) => m.DoctorShellComponent)
+    loadChildren: () => import('./doctor/doctor.routes').then((m) => m.doctorRoutes)
   },
   {
     path: 'admin',
     canMatch: [authCanMatchGuard, roleCanMatchGuard],
     canActivate: [authCanActivateGuard, roleCanActivateGuard],
     data: { roles: ['admin'] },
-    loadComponent: () => import('./admin/admin-shell.component').then((m) => m.AdminShellComponent)
+    loadChildren: () => import('./admin/admin.routes').then((m) => m.adminRoutes)
   },
   {
     path: '**',

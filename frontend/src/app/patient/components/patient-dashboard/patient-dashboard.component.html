@@ -1,0 +1,146 @@
+<div class="patient-dashboard">
+  <!-- Header Section -->
+  <header class="dashboard-header">
+    <div class="dashboard-header__content">
+      <h1 class="dashboard-header__greeting">{{ greeting() }}</h1>
+      <p class="dashboard-header__subtitle">
+        {{ nextAppointment() ? 'Tu próximo turno está programado' : 'No tienes turnos programados' }}
+      </p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="dashboard-header__stats">
+      <div class="stat-card">
+        <div class="stat-card__number">{{ appointmentStats().upcoming }}</div>
+        <div class="stat-card__label">Próximos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__number">{{ appointmentStats().pending }}</div>
+        <div class="stat-card__label">Pendientes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__number">{{ appointmentStats().confirmed }}</div>
+        <div class="stat-card__label">Confirmados</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Loading State -->
+  @if (isLoadingAppointments() || isLoadingProfile()) {
+    <div class="dashboard-loading">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Cargando tu información...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (errorMessage()) {
+    <div class="dashboard-error">
+      <mat-icon class="error-icon">error_outline</mat-icon>
+      <p>{{ errorMessage() }}</p>
+    </div>
+  }
+
+  <!-- Main Dashboard Content -->
+  @if (!isLoadingAppointments() && !isLoadingProfile() && !errorMessage()) {
+    <div class="dashboard-grid">
+
+      <!-- Next Appointment Card -->
+      @if (nextAppointment()) {
+        <app-appointment-summary-card
+          [appointment]="nextAppointment()"
+          [patientName]="patientName()"
+          class="dashboard-grid__item dashboard-grid__item--span-2"
+        />
+      } @else {
+        <!-- No Appointments Card -->
+        <mat-card class="dashboard-grid__item dashboard-grid__item--span-2">
+          <div class="no-appointments">
+            <mat-icon class="no-appointments__icon">event_available</mat-icon>
+            <h3>No tienes turnos programados</h3>
+            <p>Reserva tu próxima consulta médica</p>
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="navigateToBooking()"
+              class="no-appointments__action"
+            >
+              <mat-icon>add</mat-icon>
+              Reservar Turno
+            </button>
+          </div>
+        </mat-card>
+      }
+
+      <!-- Quick Actions Card -->
+      <app-quick-actions-card
+        (navigateToBooking)="navigateToBooking()"
+        (navigateToAppointments)="navigateToAppointments()"
+        (navigateToProfile)="navigateToProfile()"
+        (navigateToMedicalRecords)="navigateToMedicalRecords()"
+        class="dashboard-grid__item"
+      />
+
+      <!-- Medical Records Preview -->
+      @if (recentMedicalRecords().length > 0) {
+        <app-medical-records-preview
+          [records]="recentMedicalRecords()"
+          [isLoading]="isLoadingRecords()"
+          (viewAll)="navigateToMedicalRecords()"
+          class="dashboard-grid__item dashboard-grid__item--span-2"
+        />
+      }
+
+      <!-- Upcoming Appointments Summary -->
+      @if (upcomingAppointments().length > 1) {
+        <mat-card class="dashboard-grid__item dashboard-grid__item--span-3">
+          <div class="appointments-summary">
+            <div class="appointments-summary__header">
+              <h3>
+                <mat-icon>schedule</mat-icon>
+                Todos tus próximos turnos
+              </h3>
+              <span class="appointments-count">{{ upcomingAppointments().length }} turnos</span>
+            </div>
+
+            <div class="appointments-list">
+              @for (appointment of upcomingAppointments().slice(1, 4); track appointment.id) {
+                <div class="appointment-item">
+                  <div class="appointment-item__date">
+                    <div class="date-day">
+                      {{ appointment.startAt | date:'d' }}
+                    </div>
+                    <div class="date-month">
+                      {{ appointment.startAt | date:'MMM' }}
+                    </div>
+                  </div>
+                  <div class="appointment-item__details">
+                    <h4>Consulta Médica</h4>
+                    <p>{{ appointment.startAt | date:'EEEE, HH:mm' }}</p>
+                  </div>
+                  <div class="appointment-item__status">
+                    <mat-chip
+                      [ngClass]="'status-' + appointment.status"
+                      [color]="appointment.status === 'confirmed' ? 'primary' : 'accent'"
+                    >
+                      {{ appointment.status === 'confirmed' ? 'Confirmado' : 'Pendiente' }}
+                    </mat-chip>
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (upcomingAppointments().length > 4) {
+              <div class="appointments-summary__footer">
+                <button mat-button color="primary" (click)="navigateToAppointments()">
+                  Ver todos los turnos
+                  <mat-icon>arrow_forward</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

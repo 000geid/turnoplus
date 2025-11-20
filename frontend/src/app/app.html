@@ -7,7 +7,12 @@
     <nav class="topbar__nav">
       @if (isAuthenticated()) {
         <span class="topbar__user">Hola, {{ user()?.fullName || user()?.email }}</span>
-        <button class="btn btn-secondary" type="button" (click)="logout()">Cerrar sesión</button>
+        <button class="btn btn-secondary" type="button" (click)="logout()" aria-label="Cerrar sesión">
+          <span class="topbar__logout-text">Cerrar sesión</span>
+          <span class="topbar__logout-icon">
+            <i class="material-icons">logout</i>
+          </span>
+        </button>
       } @else {
         <a routerLink="/auth/login" class="topbar__link">Ingresar</a>
         <a routerLink="/auth/register" class="btn btn-primary">Crear cuenta</a>

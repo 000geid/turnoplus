@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Iterator
 
-from sqlalchemy import select
+from sqlalchemy import select, func, distinct
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -14,6 +14,8 @@ from app.models.user import User as UserModel
 from app.models.patient import Patient as PatientModel
 from app.models.appointment import Appointment as AppointmentModel
 from app.models.office import Office as OfficeModel
+from app.models.availability import Availability
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Doctor, DoctorCreate, DoctorUpdate, Patient
 from app.utils.security import hash_password, verify_password
 
@@ -32,6 +34,27 @@ class DoctorsService:
             stmt = select(DoctorModel).options(joinedload(DoctorModel.user))
             doctors = session.scalars(stmt).all()
             return [self._to_schema(model) for model in doctors if model.user]
+
+    def list_paginated(self, page: int = 1, size: int = 10) -> PaginatedResponse[Doctor]:
+        """Get paginated list of doctors."""
+        with self._session_scope() as session:
+            stmt = select(DoctorModel).options(joinedload(DoctorModel.user))
+            
+            # Get total count
+            count_stmt = select(DoctorModel).options(joinedload(DoctorModel.user))
+            total = session.scalar(select(func.count()).select_from(count_stmt.subquery())) or 0
+            
+            # Apply pagination
+            offset = (page - 1) * size
+            paginated_stmt = stmt.offset(offset).limit(size)
+            doctors = session.scalars(paginated_stmt).all()
+            
+            return PaginatedResponse.create(
+                items=[self._to_schema(model) for model in doctors if model.user],
+                total=total,
+                page=page,
+                size=size
+            )
 
     def get(self, doctor_id: int) -> Doctor | None:
         with self._session_scope() as session:
@@ -110,42 +133,106 @@ class DoctorsService:
                 return False
 
             user = doctor.user
+            
+            # Import models locally to avoid circular imports
+            from app.models.appointment_block import AppointmentBlock
+            
+            # Delete dependent records in the correct order to avoid constraint violations
+            # 1. Delete appointments that reference this doctor
+            stmt = select(AppointmentModel).where(AppointmentModel.doctor_id == doctor_id)
+            appointments = session.scalars(stmt).all()
+            for appointment in appointments:
+                session.delete(appointment)
+            
+            # 2. Delete appointment_blocks that are linked to availabilities for this doctor
+            stmt = select(AppointmentBlock).join(Availability).where(Availability.doctor_id == doctor_id)
+            appointment_blocks = session.scalars(stmt).all()
+            for block in appointment_blocks:
+                session.delete(block)
+            
+            # 3. Delete availabilities that reference this doctor
+            stmt = select(Availability).where(Availability.doctor_id == doctor_id)
+            availabilities = session.scalars(stmt).all()
+            for availability in availabilities:
+                session.delete(availability)
+            
+            # 4. Delete doctor record
             session.delete(doctor)
+            
+            # 5. Delete user record last
             if user:
                 session.delete(user)
+                
             session.flush()
             return True
 
     def get_patients_for_doctor(self, doctor_id: int) -> list[Patient]:
         """Get all patients that have had appointments with this doctor."""
         with self._session_scope() as session:
-            # First verify doctor exists
-            doctor = session.get(DoctorModel, doctor_id)
-            if not doctor or not doctor.user:
-                return []
-
-            # Get unique patient IDs from appointments
-            stmt = (
-                select(AppointmentModel.patient_id)
+            # Fixed query to handle MySQL DISTINCT with ORDER BY limitation
+            # First get distinct patient IDs with their latest appointment time
+            subquery = (
+                select(
+                    AppointmentModel.patient_id,
+                    func.max(AppointmentModel.start_at).label('latest_appointment')
+                )
                 .where(AppointmentModel.doctor_id == doctor_id)
-                .distinct()
+                .group_by(AppointmentModel.patient_id)
+                .subquery()
             )
-            patient_ids = session.scalars(stmt).all()
-
-            if not patient_ids:
-                return []
-
-            # Get patient details with user info, ordered by most recent appointment
+            
+            # Then join with patients and order by the latest appointment time
             stmt = (
                 select(PatientModel)
                 .options(joinedload(PatientModel.user))
-                .where(PatientModel.id.in_(patient_ids))
-                .join(AppointmentModel, PatientModel.id == AppointmentModel.patient_id)
-                .where(AppointmentModel.doctor_id == doctor_id)
-                .order_by(AppointmentModel.start_at.desc())
+                .join(subquery, PatientModel.id == subquery.c.patient_id)
+                .order_by(subquery.c.latest_appointment.desc())
             )
             patients = session.scalars(stmt).all()
             return [self._patient_to_schema(patient) for patient in patients if patient.user]
+
+    def get_patients_for_doctor_paginated(self, doctor_id: int, page: int = 1, size: int = 10) -> PaginatedResponse[Patient]:
+        """Get paginated list of patients that have had appointments with this doctor."""
+        with self._session_scope() as session:
+            # Get total count
+            count_stmt = (
+                select(func.count(distinct(PatientModel.id)))
+                .join(AppointmentModel, PatientModel.id == AppointmentModel.patient_id)
+                .where(AppointmentModel.doctor_id == doctor_id)
+            )
+            total = session.scalar(count_stmt) or 0
+            
+            # Fixed query to handle MySQL DISTINCT with ORDER BY limitation
+            # First get distinct patient IDs with their latest appointment time
+            subquery = (
+                select(
+                    AppointmentModel.patient_id,
+                    func.max(AppointmentModel.start_at).label('latest_appointment')
+                )
+                .where(AppointmentModel.doctor_id == doctor_id)
+                .group_by(AppointmentModel.patient_id)
+                .subquery()
+            )
+            
+            # Then join with patients and order by the latest appointment time
+            stmt = (
+                select(PatientModel)
+                .options(joinedload(PatientModel.user))
+                .join(subquery, PatientModel.id == subquery.c.patient_id)
+                .order_by(subquery.c.latest_appointment.desc())
+            )
+            
+            # Apply pagination
+            offset = (page - 1) * size
+            paginated_stmt = stmt.offset(offset).limit(size)
+            patients = session.scalars(paginated_stmt).all()
+            
+            return PaginatedResponse.create(
+                items=[self._patient_to_schema(patient) for patient in patients if patient.user],
+                total=total,
+                page=page,
+                size=size
+            )
 
     def authenticate(self, email: str, password: str) -> tuple[Doctor, str] | None:
         with self._session_scope() as session:
@@ -160,6 +247,10 @@ class DoctorsService:
                 return None
 
             if not verify_password(password, doctor.user.password_hash):
+                return None
+            
+            # Validate role - only DOCTOR role can use this endpoint
+            if doctor.user.role != UserRole.DOCTOR:
                 return None
 
             return self._to_schema(doctor), f"doctor-token-{doctor.user.id}"

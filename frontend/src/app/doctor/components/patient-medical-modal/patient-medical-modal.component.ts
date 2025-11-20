@@ -10,9 +10,12 @@ import {
   DestroyRef
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NgFor, NgIf, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import { ToastService } from '../../../shared/services/toast.service';
 import { MedicalRecordsService } from '../../../core/services/medical-records.service';
 import { MedicalRecordDto, MedicalRecordCreateRequest } from '../../../core/models/medical-record';
 
@@ -24,7 +27,7 @@ export interface PatientMedicalModalCloseEvent {
 @Component({
   selector: 'app-patient-medical-modal',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, MatIconModule],
   templateUrl: './patient-medical-modal.component.html',
   styleUrl: './patient-medical-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -37,6 +40,7 @@ export class PatientMedicalModalComponent implements OnInit {
   @Output() modalClose = new EventEmitter<PatientMedicalModalCloseEvent>();
 
   private readonly medicalRecordsService = inject(MedicalRecordsService);
+  private readonly toastService = inject(ToastService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -73,12 +77,13 @@ export class PatientMedicalModalComponent implements OnInit {
 
     if (this.newRecordForm.invalid) {
       this.newRecordForm.markAllAsTouched();
-      this.saveError.set('Completá al menos un campo para crear el registro.');
+      this.toastService.warning('Completá al menos un campo para crear el registro.');
       return;
     }
 
     const { diagnosis, treatment, notes } = this.newRecordForm.getRawValue();
     this.savingRecord.set(true);
+    this.toastService.info('Guardando registro médico...', { config: { duration: 0 } });
     this.saveError.set(null);
 
     const payload: MedicalRecordCreateRequest = {
@@ -95,13 +100,14 @@ export class PatientMedicalModalComponent implements OnInit {
       .subscribe({
         next: (record) => {
           this.savingRecord.set(false);
+          this.toastService.success('Registro médico guardado exitosamente.');
           this.newRecordForm.reset();
           this.loadPatientHistory(); // Refresh history
           this.modalClose.emit({ type: 'recordCreated', record });
         },
         error: () => {
           this.savingRecord.set(false);
-          this.saveError.set('No pudimos crear el registro. Reintentá más tarde.');
+          this.toastService.error('No pudimos crear el registro. Reintentá más tarde.');
         }
       });
   }
@@ -122,7 +128,7 @@ export class PatientMedicalModalComponent implements OnInit {
         },
         error: () => {
           this.loadingHistory.set(false);
-          this.historyError.set('No pudimos cargar el historial del paciente.');
+          this.toastService.error('No pudimos cargar el historial del paciente.');
         }
       });
   }

@@ -1,0 +1,206 @@
+:host {
+  display: block;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  max-width: var(--toast-max-width, 400px);
+  position: relative;
+  
+  /* Ensure border color is properly applied */
+  border-color: var(--toast-border-color, currentColor);
+
+  &.dismissible {
+    padding-right: 2.5rem;
+  }
+}
+
+.toast__icon {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.toast__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast__title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.toast__message {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.toast__dismiss {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  
+  &:hover {
+    opacity: 1;
+  }
+
+  &:focus {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+// Animation classes for MatSnackBar
+.mat-mdc-snack-bar-container {
+  --mdc-snackbar-supporting-text-color: inherit;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+
+  // Ensure toast borders are always visible
+  .toast {
+    border-style: solid !important;
+    border-width: 1px !important;
+  }
+  
+  // Override any Material Design borders
+  .mat-mdc-simple-snack-bar {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+
+// Override CDK overlay backdrop that Material snackbar uses
+:host ::ng-deep {
+  .cdk-overlay-container {
+    .cdk-overlay-pane {
+      .mat-mdc-snack-bar-container {
+        padding: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        filter: none !important;
+        backdrop-filter: none !important;
+        border: none !important;
+        margin: 0 !important;
+      }
+    }
+  }
+
+  // Target backdrop overlay specifically
+  .cdk-overlay-backdrop {
+    background: none !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+    opacity: 0 !important;
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  // Override CDK overlay pane
+  .cdk-overlay-pane {
+    filter: none !important;
+    backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  // Target Material snackbar specific containers
+  .mat-mdc-snack-bar-container,
+  .mat-mdc-simple-snack-bar {
+    box-shadow: none !important;
+    border: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+.mat-mdc-snack-bar-handset {
+  .toast {
+    margin: 0.5rem;
+    max-width: calc(100vw - 1rem);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 640px) {
+  .toast {
+    margin: 0.5rem;
+    max-width: calc(100vw - 1rem);
+  }
+}
+
+// Success variant animations
+@keyframes slideInTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutTop {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideOutBottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}

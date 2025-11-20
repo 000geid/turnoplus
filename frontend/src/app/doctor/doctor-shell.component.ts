@@ -6,14 +6,18 @@ import {
   inject,
   signal
 } from '@angular/core';
-import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { DatePipe, NgClass, CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
+import { ToastService } from '../shared/services/toast.service';
 import { AuthService } from '../core/services/auth.service';
 import { AppointmentsService } from '../core/services/appointments.service';
 import { MedicalRecordsService } from '../core/services/medical-records.service';
 import { DoctorsService } from '../core/services/doctors.service';
-import { AppointmentDto, AvailabilityDto } from '../core/models/appointment';
+import { AppointmentDto, AvailabilityDto, AppointmentStatus } from '../core/models/appointment';
 import { MedicalRecordDto, MedicalRecordUpdateRequest } from '../core/models/medical-record';
 import { PatientDto } from '../core/models/user';
 import {
@@ -25,12 +29,26 @@ import {
   DoctorRecordUpdateEvent,
   DoctorRecordsComponent
 } from './components/doctor-records/doctor-records.component';
-import { TabbedShellComponent, TabConfig } from '../shared/components/tabbed-shell/tabbed-shell.component';
+import {
+  DashboardSidebarComponent,
+  DashboardSidebarItem
+} from '../shared/components/dashboard-sidebar/dashboard-sidebar.component';
+import { DashboardMobileMenuComponent } from '../shared/components/dashboard-mobile-menu/dashboard-mobile-menu.component';
 
 @Component({
   selector: 'app-doctor-shell',
   standalone: true,
-  imports: [NgClass, DatePipe, TabbedShellComponent, DoctorAvailabilityComponent, DoctorRecordsComponent],
+  imports: [
+    CommonModule,
+    NgClass,
+    DatePipe,
+    MatIconModule,
+    MatButtonModule,
+    DashboardSidebarComponent,
+    DashboardMobileMenuComponent,
+    DoctorAvailabilityComponent,
+    DoctorRecordsComponent
+  ],
   templateUrl: './doctor-shell.component.html',
   styleUrl: './doctor-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -40,7 +58,9 @@ export class DoctorShellComponent {
   private readonly appointmentsService = inject(AppointmentsService);
   private readonly medicalRecordsService = inject(MedicalRecordsService);
   private readonly doctorsService = inject(DoctorsService);
+  private readonly toastService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   readonly doctorId: number | null;
   private readonly doctorGreeting = signal<string | null>(null);
@@ -52,9 +72,7 @@ export class DoctorShellComponent {
 
   readonly appointmentsError = signal<string | null>(null);
   readonly availabilityError = signal<string | null>(null);
-  readonly availabilityMessage = signal<string | null>(null);
   readonly recordsError = signal<string | null>(null);
-  readonly recordsMessage = signal<string | null>(null);
   readonly patientsError = signal<string | null>(null);
 
   readonly isLoadingAppointments = signal<boolean>(false);
@@ -67,6 +85,7 @@ export class DoctorShellComponent {
 
   readonly isSavingRecord = signal<boolean>(false);
   readonly recordMutationId = signal<number | null>(null);
+  readonly mobileSidebarOpen = signal<boolean>(false);
 
   readonly sortedAppointments = computed(() =>
     [...this.appointments()].sort(
@@ -75,36 +94,163 @@ export class DoctorShellComponent {
   );
 
   readonly doctorName = computed(() => this.doctorGreeting());
+  readonly currentRoute = computed(() => this.router.url.split('?')[0]);
+  readonly pendingAppointments = computed(
+    () => this.sortedAppointments().filter((apt) => apt.status === 'pending').length
+  );
 
-  readonly tabs: TabConfig[] = [
+  readonly navigationItems = computed<DashboardSidebarItem[]>(() => [
     {
       id: 'dashboard',
       label: 'Dashboard',
-      icon: 'dashboard'
+      icon: 'dashboard',
+      route: '/doctor/dashboard'
     },
     {
       id: 'availability',
       label: 'Disponibilidad',
-      icon: 'schedule'
+      icon: 'schedule',
+      route: '/doctor/availability'
     },
     {
       id: 'appointments',
       label: 'Mis Turnos',
-      icon: 'event'
+      icon: 'event',
+      route: '/doctor/appointments',
+      badge: this.pendingAppointments() || null
     },
     {
       id: 'records',
-      label: 'Registros Médicos',
-      icon: 'medical_services'
+      label: 'Registros',
+      icon: 'medical_services',
+      route: '/doctor/records'
     }
-  ];
+  ]);
+
+  readonly globalError = computed(
+    () =>
+      this.appointmentsError() ||
+      this.availabilityError() ||
+      this.recordsError() ||
+      this.patientsError()
+  );
+
+  // Enhanced computed properties for dashboard
+  readonly greetingMessage = computed(() => {
+    const hour = new Date().getHours();
+    const name = this.doctorName();
+    
+    if (hour < 12) return `Buenos días, Dr. ${name}`;
+    if (hour < 18) return `Buenas tardes, Dr. ${name}`;
+    return `Buenas noches, Dr. ${name}`;
+  });
+
+  // Current date formatting
+  readonly currentDateFormatted = computed(() => {
+    return new Date().toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  });
+
+  // Today's appointments
+  readonly todayAppointments = computed(() => {
+    const today = new Date().toDateString();
+    return this.sortedAppointments().filter(apt =>
+      new Date(apt.startAt).toDateString() === today
+    );
+  });
+
+  // Weekly appointments (current week)
+  readonly weeklyAppointments = computed(() => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    return this.sortedAppointments().filter(apt => {
+      const aptDate = new Date(apt.startAt);
+      return aptDate >= startOfWeek && aptDate <= endOfWeek;
+    });
+  });
+
+  // Weekly statistics
+  readonly weeklyStats = computed(() => {
+    const weekAppointments = this.weeklyAppointments();
+    return {
+      total: weekAppointments.length,
+      confirmed: weekAppointments.filter(apt => apt.status === 'confirmed').length,
+      pending: weekAppointments.filter(apt => apt.status === 'pending').length,
+      completed: weekAppointments.filter(apt => apt.status === 'completed').length,
+      canceled: weekAppointments.filter(apt => apt.status === 'canceled').length
+    };
+  });
+
+  // Today's availability
+  readonly todayAvailability = computed(() => {
+    const today = new Date().toDateString();
+    return this.availability().filter(avail =>
+      new Date(avail.startAt).toDateString() === today
+    );
+  });
+
+  // Next available slot
+  readonly nextAvailableSlot = computed(() => {
+    const now = new Date();
+    const futureAvailability = this.availability().filter(avail =>
+      new Date(avail.startAt) > now
+    );
+    
+    if (futureAvailability.length === 0) return null;
+    
+    futureAvailability.sort((a, b) =>
+      new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+    );
+    
+    return futureAvailability[0];
+  });
+
+  // Patient name lookup
+  readonly patientNames = computed(() => {
+    const names: { [key: number]: string } = {};
+    this.patients().forEach(patient => {
+      names[patient.id] = patient.full_name || `Paciente #${patient.id}`;
+    });
+    return names;
+  });
+
+  // Map appointment IDs to patient names for template access
+  readonly appointmentPatientNameMap = computed(() => {
+    const names = this.patientNames();
+    return this.sortedAppointments().reduce((map, apt) => {
+      map[apt.id] = names[apt.patient_id] || `Paciente #${apt.patient_id}`;
+      return map;
+    }, {} as { [key: number]: string });
+  });
+
+  readonly nextAppointment = computed(() => {
+    const now = new Date();
+    return this.sortedAppointments().find((apt) => new Date(apt.startAt) > now) ?? null;
+  });
+
+  readonly statusLabels: Record<AppointmentStatus, string> = {
+    pending: 'Pendiente',
+    confirmed: 'Confirmado',
+    canceled: 'Cancelado',
+    completed: 'Completado'
+  };
 
   constructor() {
     const currentUser = this.authService.user();
     if (!currentUser || currentUser.role !== 'doctor') {
-      this.appointmentsError.set('No pudimos validar tu sesión de profesional.');
-      this.availabilityError.set('No pudimos validar tu sesión de profesional.');
-      this.recordsError.set('No pudimos validar tu sesión de profesional.');
+      this.toastService.error('No pudimos validar tu sesión de profesional.');
       this.doctorId = null;
       return;
     }
@@ -118,6 +264,26 @@ export class DoctorShellComponent {
     this.loadAvailability();
     this.loadRecords();
     this.loadPatients();
+  }
+
+  toggleMobileSidebar(): void {
+    this.mobileSidebarOpen.update((open) => !open);
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen.set(false);
+  }
+
+  onNavigation(route: string): void {
+    this.router.navigate([route]);
+    this.closeMobileSidebar();
+  }
+
+  dismissErrors(): void {
+    this.appointmentsError.set(null);
+    this.availabilityError.set(null);
+    this.recordsError.set(null);
+    this.patientsError.set(null);
   }
 
   refreshAppointments(): void {
@@ -141,8 +307,7 @@ export class DoctorShellComponent {
       return;
     }
     this.isCreatingAvailability.set(true);
-    this.availabilityError.set(null);
-    this.availabilityMessage.set(null);
+    this.toastService.info('Creando disponibilidad...', { config: { duration: 0 } });
 
     this.appointmentsService
       .createAvailability({
@@ -159,7 +324,7 @@ export class DoctorShellComponent {
             )
           );
           this.isCreatingAvailability.set(false);
-          this.availabilityMessage.set('Disponibilidad agregada correctamente.');
+          this.toastService.success('Disponibilidad agregada correctamente.');
         },
         error: (error) => {
           this.isCreatingAvailability.set(false);
@@ -180,7 +345,7 @@ export class DoctorShellComponent {
             }
           }
           
-          this.availabilityError.set(errorMessage);
+          this.toastService.error(errorMessage);
         }
       });
   }
@@ -190,8 +355,7 @@ export class DoctorShellComponent {
       return;
     }
     this.availabilityMutationId.set(event.id);
-    this.availabilityError.set(null);
-    this.availabilityMessage.set(null);
+    this.toastService.info('Actualizando disponibilidad...', { config: { duration: 0 } });
 
     this.appointmentsService
       .updateAvailability(event.id, {})
@@ -204,11 +368,11 @@ export class DoctorShellComponent {
               .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
           );
           this.availabilityMutationId.set(null);
-          this.availabilityMessage.set('Actualizamos tu disponibilidad.');
+          this.toastService.success('Actualizamos tu disponibilidad.');
         },
         error: () => {
           this.availabilityMutationId.set(null);
-          this.availabilityError.set('No pudimos actualizar la disponibilidad.');
+          this.toastService.error('No pudimos actualizar la disponibilidad.');
         }
       });
   }
@@ -243,7 +407,7 @@ export class DoctorShellComponent {
         },
         error: () => {
           this.isLoadingAppointments.set(false);
-          this.appointmentsError.set('No pudimos obtener tus turnos programados.');
+          this.toastService.error('No pudimos obtener tus turnos programados.');
         }
       });
   }
@@ -272,7 +436,7 @@ export class DoctorShellComponent {
         },
         error: () => {
           this.isLoadingAvailability.set(false);
-          this.availabilityError.set('No pudimos cargar tu agenda disponible.');
+          this.toastService.error('No pudimos cargar tu agenda disponible.');
         }
       });
   }
@@ -301,7 +465,7 @@ export class DoctorShellComponent {
         },
         error: () => {
           this.isLoadingRecords.set(false);
-          this.recordsError.set('No pudimos obtener tus registros clínicos.');
+          this.toastService.error('No pudimos obtener tus registros clínicos.');
         }
       });
   }
@@ -326,7 +490,7 @@ export class DoctorShellComponent {
         },
         error: () => {
           this.isLoadingPatients.set(false);
-          this.patientsError.set('No pudimos obtener tus pacientes.');
+          this.toastService.error('No pudimos obtener tus pacientes.');
         }
       });
   }
@@ -339,8 +503,7 @@ export class DoctorShellComponent {
       return;
     }
     this.recordMutationId.set(recordId);
-    this.recordsError.set(null);
-    this.recordsMessage.set(null);
+    this.toastService.info('Actualizando registro...', { config: { duration: 0 } });
 
     this.medicalRecordsService
       .updateRecord(recordId, changes)
@@ -355,21 +518,18 @@ export class DoctorShellComponent {
               )
           );
           this.recordMutationId.set(null);
-          this.recordsMessage.set('Registro actualizado correctamente.');
+          this.toastService.success('Registro actualizado correctamente.');
         },
         error: () => {
           this.recordMutationId.set(null);
-          this.recordsError.set('No pudimos actualizar el registro.');
+          this.toastService.error('No pudimos actualizar el registro.');
         }
       });
   }
 
   private ensureDoctorSession(): boolean {
     if (!this.doctorId) {
-      this.appointmentsError.set('Reiniciá tu sesión para continuar.');
-      this.availabilityError.set('Reiniciá tu sesión para continuar.');
-      this.recordsError.set('Reiniciá tu sesión para continuar.');
-      this.patientsError.set('Reiniciá tu sesión para continuar.');
+      this.toastService.error('Reiniciá tu sesión para continuar.');
       return false;
     }
     return true;

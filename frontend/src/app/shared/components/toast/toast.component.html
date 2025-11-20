@@ -1,0 +1,29 @@
+<div class="toast" 
+     [style.background-color]="typeConfig.bgColor"
+     [style.color]="typeConfig.color"
+     [style.border-color]="typeConfig.borderColor"
+     [style.max-width]="toastConfig?.maxWidth"
+     [class.dismissible]="toastConfig?.dismissible">
+  
+  <div class="toast__icon" [style.color]="typeConfig.color">
+    {{ typeConfig.icon }}
+  </div>
+  
+  <div class="toast__content">
+    @if (data.title) {
+      <div class="toast__title">{{ data.title }}</div>
+    }
+    <div class="toast__message">{{ data.message }}</div>
+  </div>
+  
+  @if (toastConfig?.dismissible) {
+    <button 
+      type="button" 
+      class="toast__dismiss" 
+      (click)="data.config?.dismissible && dismiss()"
+      aria-label="Cerrar notificación"
+    >
+      ✗
+    </button>
+  }
+</div>

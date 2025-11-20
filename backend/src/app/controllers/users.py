@@ -1,4 +1,5 @@
 from app.schemas.auth import LoginRequest, UserLoginResponse
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import User, UserCreate, UserUpdate
 from app.services.users import UsersService
 from app.db.broker import get_dbbroker
@@ -9,6 +10,13 @@ def list_users() -> list[User]:
     with broker.session() as session:
         svc = UsersService(session)
         return svc.list()
+
+
+def list_users_paginated(page: int = 1, size: int = 10) -> PaginatedResponse[User]:
+    broker = get_dbbroker()
+    with broker.session() as session:
+        svc = UsersService(session)
+        return svc.list_paginated(page=page, size=size)
 
 
 def get_user(user_id: int) -> User | None:

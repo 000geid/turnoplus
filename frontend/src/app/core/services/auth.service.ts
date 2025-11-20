@@ -48,6 +48,22 @@ export class AuthService {
       );
   }
 
+  /**
+   * Get human-readable role name for error messages
+   */
+  getRoleDisplayName(role: UserRole): string {
+    switch (role) {
+      case 'patient':
+        return 'paciente';
+      case 'doctor':
+        return 'profesional';
+      case 'admin':
+        return 'administrador';
+      default:
+        return 'usuario';
+    }
+  }
+
   registerPatient(payload: PatientRegisterRequest): Observable<AuthenticatedUser> {
     return this.http.post<PatientDto>(`${API_BASE_URL}/patients`, payload).pipe(
       map((patient) =>

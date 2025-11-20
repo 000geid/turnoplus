@@ -138,3 +138,32 @@
   border-color: rgba(14, 116, 144, 0.3);
   color: var(--brand-700);
 }
+
+@media (max-width: 1024px) {
+  .doctor-records {
+    padding: 1.25rem;
+  }
+
+  .doctor-records__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .doctor-records {
+    padding: 1rem;
+  }
+
+  .doctor-records__header button {
+    width: 100%;
+  }
+
+  .doctor-records__item {
+    padding: 1.25rem;
+  }
+
+  .doctor-records__item-summary dl {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,8 +1,8 @@
 <div class="user-management">
   <div class="user-management__header">
     <h2>Gestión de Usuarios</h2>
-    <button 
-      class="btn btn-primary" 
+    <button
+      class="btn btn-primary"
       (click)="showCreateUserForm()"
       [disabled]="loading">
       <i class="material-icons">person_add</i>
@@ -46,13 +46,13 @@
             {{ user.is_active ? 'Activo' : 'Inactivo' }}
           </span>
         </div>
-        
+
         <div class="user-card__details">
           <p class="user-email">
             <i class="material-icons">email</i>
             {{ user.email }}
           </p>
-          
+
           <!-- Patient specific details -->
           <div *ngIf="user.role === 'patient' && 'medical_record_number' in user">
             <p *ngIf="user.medical_record_number" class="user-detail">
@@ -64,7 +64,7 @@
               Fecha de nacimiento: {{ user.date_of_birth }}
             </p>
           </div>
-          
+
           <!-- Doctor specific details -->
           <div *ngIf="user.role === 'doctor' && 'specialty' in user">
             <p *ngIf="user.specialty" class="user-detail">
@@ -84,7 +84,7 @@
               {{ getOfficeName(user.office_id) }}
             </p>
           </div>
-          
+
           <!-- Admin specific details -->
           <div *ngIf="user.role === 'admin'">
             <p class="user-detail">
@@ -94,24 +94,28 @@
           </div>
         </div>
       </div>
-      
-      <div class="user-card__actions">
-        <button 
-          class="btn btn-secondary btn-sm"
-          (click)="showEditUserForm(user)"
-          [disabled]="loading">
-          <i class="material-icons">edit</i>
-          Editar
-        </button>
-        <button 
-          class="btn btn-danger btn-sm"
-          (click)="deleteUser(user)"
-          [disabled]="loading">
-          <i class="material-icons">delete</i>
-          Eliminar
-        </button>
-      </div>
+
+      <button
+        class="user-card__edit-button"
+        type="button"
+        (click)="showEditUserForm(user)"
+        [disabled]="loading"
+        aria-label="Editar usuario">
+        <i class="material-icons">edit</i>
+      </button>
     </div>
+
+    <!-- Pagination component -->
+    <app-pagination
+      [currentPage]="pagination.page"
+      [totalPages]="totalPages"
+      [pageSize]="pagination.size"
+      [totalItems]="totalUsers"
+      [showPageSizeSelector]="true"
+      [showInfo]="true"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)">
+    </app-pagination>
   </div>
 
   <!-- Create/Edit Form Modal -->
@@ -313,8 +317,17 @@
           <button type="button" class="btn btn-secondary" (click)="cancelForm()">
             Cancelar
           </button>
-          <button 
-            type="submit" 
+          <button
+            *ngIf="editingUser"
+            type="button"
+            class="btn btn-danger"
+            (click)="deleteUser(editingUser)"
+            [disabled]="loading">
+            <i class="material-icons">delete</i>
+            Eliminar
+          </button>
+          <button
+            type="submit"
             class="btn btn-primary"
             [disabled]="loading || !formData.email.trim() || (!editingUser && !formData.password.trim())">
             <i *ngIf="loading" class="material-icons">refresh</i>

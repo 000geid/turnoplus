@@ -10,9 +10,17 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 
+import { ToastService } from '../../../shared/services/toast.service';
 import { AvailabilityDto, AppointmentBlockDto } from '../../../core/models/appointment';
 import { AvailabilityCalendarComponent } from '../availability-calendar/availability-calendar.component';
+import {
+  DayAvailabilityModalComponent,
+  DayAvailabilityModalData,
+  DayAvailabilityModalCloseEvent
+} from '../../../shared/components/day-availability-modal/day-availability-modal.component';
+import { SharedCalendarComponent, CalendarDay } from '../../../shared/components/calendar/shared-calendar.component';
 
 export interface DoctorAvailabilityCreateEvent {
   startAt: string;
@@ -34,7 +42,15 @@ export interface DoctorAvailabilityUpdateEvent {
 @Component({
   selector: 'app-doctor-availability',
   standalone: true,
-  imports: [ReactiveFormsModule, NgIf, NgClass, DatePipe, AvailabilityCalendarComponent],
+  imports: [
+    ReactiveFormsModule,
+    NgIf,
+    NgClass,
+    DatePipe,
+    CommonModule,
+    SharedCalendarComponent,
+    DayAvailabilityModalComponent
+  ],
   templateUrl: './doctor-availability.component.html',
   styleUrl: './doctor-availability.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -53,9 +69,15 @@ export class DoctorAvailabilityComponent {
   @Output() update = new EventEmitter<DoctorAvailabilityUpdateEvent>();
 
   private readonly fb = inject(FormBuilder);
+  private readonly toastService = inject(ToastService);
 
-  readonly formError = signal<string | null>(null);
+readonly formError = signal<string | null>(null);
   readonly viewMode = signal<'list' | 'calendar'>('calendar');
+  
+  // Modal state management
+  readonly modalData = signal<DayAvailabilityModalData | null>(null);
+  readonly isDeleting = signal<boolean>(false);
+
   readonly form = this.fb.nonNullable.group({
     date: ['', Validators.required],
     template: ['', Validators.required],
@@ -146,19 +168,27 @@ export class DoctorAvailabilityComponent {
 
   private setupTemplateWatcher(): void {
     this.form.get('template')?.valueChanges.subscribe(templateId => {
-      if (templateId && templateId !== 'custom') {
+      if (templateId) {
         const template = this.timeSlotTemplates.find(t => t.id === templateId);
-        if (template) {
+        if (template && templateId !== 'custom') {
+          // For pre-defined templates, use today's date
           const today = new Date().toISOString().split('T')[0];
           this.form.patchValue({
             date: today,
             start: template.startTime,
             end: template.endTime
           });
-          
-          // Clear any existing form errors when template changes
-          this.formError.set(null);
+        } else if (templateId === 'custom') {
+          // For custom template, keep existing values but allow editing
+          // Don't overwrite existing date/time selection
+          this.form.patchValue({
+            start: '',
+            end: ''
+          });
         }
+        
+        // Clear any existing form errors when template changes
+        this.formError.set(null);
       }
     });
   }
@@ -170,6 +200,7 @@ export class DoctorAvailabilityComponent {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toastService.error('Completá los campos requeridos.');
       this.formError.set('Completá los campos requeridos.');
       return;
     }
@@ -188,17 +219,29 @@ export class DoctorAvailabilityComponent {
     endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
 
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      this.toastService.error('Ingresá fechas válidas.');
       this.formError.set('Ingresá fechas válidas.');
       return;
     }
 
+    // Validate date is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (startDate < today) {
+      this.toastService.error('No podés seleccionar una fecha pasada.');
+      this.formError.set('No podés seleccionar una fecha pasada.');
+      return;
+    }
+
     if (endDate <= startDate) {
+      this.toastService.error('La hora de fin debe ser posterior a la de inicio.');
       this.formError.set('La hora de fin debe ser posterior a la de inicio.');
       return;
     }
 
     // Validate block alignment (start time must be on the hour)
     if (startDate.getMinutes() !== 0) {
+      this.toastService.error('El horario de inicio debe ser en punto (ej: 9:00, 10:00, 11:00).');
       this.formError.set('El horario de inicio debe ser en punto (ej: 9:00, 10:00, 11:00).');
       return;
     }
@@ -206,6 +249,7 @@ export class DoctorAvailabilityComponent {
     // Validate duration is multiple of 30 minutes
     const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
     if (durationMinutes % 30 !== 0) {
+      this.toastService.error('La duración debe ser múltiplo de 30 minutos.');
       this.formError.set('La duración debe ser múltiplo de 30 minutos.');
       return;
     }
@@ -213,11 +257,13 @@ export class DoctorAvailabilityComponent {
     // Check for overlapping availability
     const overlap = this.checkForOverlap(startDate, endDate);
     if (overlap) {
+      this.toastService.warning('Ya tenés disponibilidad en este horario. Elegí otro horario o fecha.');
       this.formError.set('Ya tenés disponibilidad en este horario. Elegí otro horario o fecha.');
       return;
     }
 
     this.formError.set(null);
+    this.toastService.success('Disponibilidad agregada correctamente.');
     this.create.emit({
       startAt: startDate.toISOString(),
       endAt: endDate.toISOString()
@@ -261,25 +307,91 @@ export class DoctorAvailabilityComponent {
     return this.form.get('template')?.value === 'custom';
   }
 
+  hasTemplateSelected(): boolean {
+    return !!this.form.get('template')?.value;
+  }
+
   setViewMode(mode: 'list' | 'calendar'): void {
     this.viewMode.set(mode);
   }
 
-  onDaySelected(date: Date): void {
-    // Handle day selection if needed
-    console.log('Day selected:', date);
+onDaySelected(date: Date): void {
+    // Open modal with day availability
+    const modalData: DayAvailabilityModalData = {
+      date: date,
+      mode: 'doctor',
+      availabilityData: this.availability
+    };
+
+    this.modalData.set(modalData);
   }
 
-  onAvailabilitySelected(availability: AvailabilityDto): void {
+  onConfigureAvailability(date: Date): void {
+    // Pre-fill the form with the selected date
+    const dateString = date.toISOString().split('T')[0];
+    this.form.patchValue({
+      date: dateString
+    });
+    
+    // Scroll to form for better UX
+    const formElement = document.querySelector('.doctor-availability__form');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+onAvailabilitySelected(availability: AvailabilityDto): void {
     // Handle availability selection if needed
     console.log('Availability selected:', availability);
+  }
+
+  // Modal event handlers
+  onModalClose(event: DayAvailabilityModalCloseEvent): void {
+    this.modalData.set(null);
+    this.isDeleting.set(false);
+
+    // Handle different types of modal events
+    switch (event.type) {
+      case 'availabilityConfigured':
+        // Pre-fill form with selected date
+        if (event.data?.date) {
+          const dateString = event.data.date.toISOString().split('T')[0];
+          this.form.patchValue({
+            date: dateString
+          });
+          
+          // Scroll to form for better UX
+          const formElement = document.querySelector('.doctor-availability__form');
+          if (formElement) {
+            formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+        break;
+      case 'availabilityDeleted':
+        // Delete availability
+        if (event.data && event.data.id) {
+          this.isDeleting.set(true);
+          this.update.emit({
+            id: event.data.id
+          });
+          // Note: The actual deletion will be handled by the parent component
+          // This would need to be integrated with the existing deletion logic
+        }
+        break;
+      case 'close':
+        // Modal was closed, no action needed
+        break;
+    }
   }
 
   private initializeDefaultRange(): void {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
-    const startTime = new Date(now.getTime() + 60 * 60 * 1000);
-    const endTime = new Date(startTime.getTime() + 30 * 60 * 1000);
+    
+    // Set default to next full hour (9:00 AM)
+    const startTime = new Date();
+    startTime.setHours(9, 0, 0, 0);
+    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour later (10:00 AM)
 
     this.form.setValue({
       date: today,

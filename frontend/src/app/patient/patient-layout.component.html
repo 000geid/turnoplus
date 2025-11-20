@@ -1,0 +1,93 @@
+<div class="dashboard-layout patient-layout">
+  <button
+    mat-icon-button
+    class="floating-menu-btn"
+    (click)="toggleMobileSidebar()"
+    [attr.aria-label]="mobileSidebarOpen() ? 'Cerrar menú' : 'Abrir menú'"
+  >
+    <mat-icon>{{ mobileSidebarOpen() ? 'close' : 'menu' }}</mat-icon>
+  </button>
+
+  <!-- Mobile Sidebar Overlay -->
+  <!-- Sidebar -->
+  <app-dashboard-sidebar
+    [items]="navigationItems()"
+    [activeRoute]="currentRoute()"
+    (navigate)="onNavigation($event)"
+    [mobileOpen]="mobileSidebarOpen()"
+  ></app-dashboard-sidebar>
+
+  @if (mobileSidebarOpen()) {
+    <app-dashboard-mobile-menu
+      [items]="navigationItems()"
+      [activeRoute]="currentRoute()"
+      (navigate)="onNavigation($event)"
+      (close)="closeMobileSidebar()"
+    ></app-dashboard-mobile-menu>
+  }
+
+  <!-- Main Content Area -->
+  <main class="dashboard-main">
+    <!-- Error Banner -->
+    @if (errorMessage()) {
+      <div class="error-banner">
+        <mat-icon class="error-icon">error_outline</mat-icon>
+        <span>{{ errorMessage() }}</span>
+        <button mat-icon-button (click)="errorMessage.set(null)">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    }
+
+    <!-- Dynamic Content -->
+    <div class="content-area">
+
+      <!-- Appointments Route -->
+      @if (currentRoute() === '/patient/appointments') {
+        <div class="section-container">
+          <app-patient-appointments
+            [appointments]="appointments()"
+            [loading]="isLoadingAppointments()"
+            [actionId]="appointmentActionId()"
+            (cancel)="onAppointmentAction($event, 'cancel')"
+            (confirm)="onAppointmentAction($event, 'confirm')"
+          />
+        </div>
+      }
+
+      <!-- Booking Route -->
+      @if (currentRoute() === '/patient/booking') {
+        <div class="section-container">
+          <app-patient-booking
+            [patientId]="currentUserId"
+            (booked)="onAppointmentBooked($event)"
+          />
+        </div>
+      }
+
+      <!-- Profile Route -->
+      @if (currentRoute() === '/patient/profile') {
+        <div class="section-container">
+          <app-patient-profile
+            [patient]="profile()"
+            [loading]="isLoadingProfile()"
+            [saving]="isSavingProfile()"
+            (save)="onProfileSave($event)"
+          />
+        </div>
+      }
+
+      <!-- Medical Records Route -->
+      @if (currentRoute() === '/patient/records') {
+        <div class="section-container">
+          <app-patient-medical-records
+            [records]="medicalRecords()"
+            [loading]="isLoadingRecords()"
+            [error]="recordsError()"
+            (refresh)="onRefreshRecords()"
+          />
+        </div>
+      }
+    </div>
+  </main>
+</div>

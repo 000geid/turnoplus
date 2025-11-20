@@ -19,25 +19,28 @@
   <div class="calendar-grid">
     <!-- Day Headers -->
     <div class="day-headers">
-      <div class="day-header">Dom</div>
+      <div class="day-header weekend">Dom</div>
       <div class="day-header">Lun</div>
       <div class="day-header">Mar</div>
       <div class="day-header">Mié</div>
       <div class="day-header">Jue</div>
       <div class="day-header">Vie</div>
-      <div class="day-header">Sáb</div>
+      <div class="day-header weekend">Sáb</div>
     </div>
 
     <!-- Calendar Days -->
     <div class="calendar-days">
       @for (day of calendarDays(); track day.date.toISOString()) {
-        <div 
+        <div
           class="calendar-day"
           [class.current-month]="day.isCurrentMonth"
           [class.today]="day.isToday"
           [class.selected]="isDaySelected(day)"
           [class.has-availability]="day.availability.length > 0"
-          (click)="selectDay(day)"
+          [class.has-booked]="getBookedBlocksForDay(day) > 0"
+          [class.weekend]="isWeekend(day)"
+          [class.past-day]="day.date < now"
+          (click)="selectDayWithConfigure(day)"
         >
           <div class="day-number">{{ day.date.getDate() }}</div>
           
@@ -49,7 +52,7 @@
               
               @if (day.availability.length === 1) {
                 <div class="single-availability">
-                  {{ day.availability[0].startAt | date: 'HH:mm' }} - 
+                  {{ day.availability[0].startAt | date: 'HH:mm' }} -
                   {{ day.availability[0].endAt | date: 'HH:mm' }}
                 </div>
               } @else if (day.availability.length > 1) {
@@ -59,6 +62,10 @@
               }
             </div>
           }
+          
+          @if (getBookedBlocksForDay(day) > 0) {
+            <div class="booking-indicator">📅</div>
+          }
         </div>
       }
     </div>
@@ -66,32 +73,87 @@
 
   <!-- Selected Day Details -->
   @if (selectedDate(); as currentSelectedDate) {
-    @if (groupedAvailability(); as grouped) {
-      <div class="selected-day-details">
-        <h4>Disponibilidad del {{ currentSelectedDate | date: 'EEEE d MMMM' }}</h4>
-        
+    <div class="selected-day-details">
+      <h4>Agenda del {{ currentSelectedDate | date: 'EEEE d MMMM' }}</h4>
+      
+      @if (groupedAvailability(); as grouped) {
         @if (grouped && grouped[currentSelectedDate.toDateString()] && grouped[currentSelectedDate.toDateString()].length > 0) {
-          <div class="day-availability-list">
+          <div class="day-schedule">
             @for (avail of grouped[currentSelectedDate.toDateString()] || []; track avail.id) {
-            <div class="availability-item" (click)="selectAvailability(avail)">
-              <div class="availability-time">
-                {{ avail.startAt | date: 'HH:mm' }} - {{ avail.endAt | date: 'HH:mm' }}
+              <div class="availability-slot" (click)="selectAvailability(avail)">
+                <div class="slot-header">
+                  <div class="slot-time">
+                    {{ avail.startAt | date: 'HH:mm' }} - {{ avail.endAt | date: 'HH:mm' }}
+                  </div>
+                  <div class="slot-summary">
+                    {{ getAvailableBlocksForDay({ date: currentSelectedDate, isCurrentMonth: true, isToday: false, availability: [avail] }) }} /
+                    {{ getTotalBlocksForDay({ date: currentSelectedDate, isCurrentMonth: true, isToday: false, availability: [avail] }) }} disponibles
+                  </div>
+                </div>
+                
+                <!-- Detailed Blocks View -->
+                @if (avail.blocks && avail.blocks.length > 0) {
+                  <div class="blocks-details">
+                    <div class="blocks-grid">
+                      @for (block of avail.blocks; track block.id) {
+                        <div class="block-item"
+                             [class.booked]="block.isBooked"
+                             [class.available]="!block.isBooked"
+                             [class.past-block]="isBlockInPast(block)">
+                          <div class="block-time">
+                            {{ block.startAt | date: 'HH:mm' }} - {{ block.endAt | date: 'HH:mm' }}
+                          </div>
+                          <div class="block-status">
+                            @if (block.isBooked) {
+                              <span class="status-booked">📅 Reservado</span>
+                            } @else {
+                              <span class="status-available">✅ Disponible</span>
+                            }
+                            @if (getBlockPatientName(block)) {
+                              <span class="patient-name">- {{ getBlockPatientName(block) }}</span>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
               </div>
-              <div class="availability-blocks">
-                {{ getAvailableBlocksForDay({ date: currentSelectedDate, isCurrentMonth: true, isToday: false, availability: [avail] }) }} / 
-                {{ getTotalBlocksForDay({ date: currentSelectedDate, isCurrentMonth: true, isToday: false, availability: [avail] }) }} disponibles
-              </div>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        } @else {
+          <div class="no-availability-state">
+            <div class="empty-icon">📅</div>
+            <h5>No hay turnos este día</h5>
+            <p>No se cargó disponibilidad para este día.</p>
+            <button type="button" class="btn btn-primary" (click)="selectDay({ date: currentSelectedDate, isCurrentMonth: true, isToday: false, availability: [] })">
+              Configurar disponibilidad
+            </button>
+          </div>
+        }
       } @else {
-        <p class="no-availability">No hay disponibilidad para este día</p>
+        <div class="no-availability-state">
+          <p>No hay disponibilidad para este día</p>
+        </div>
       }
-      </div>
-    }
+    </div>
   } @else {
     <div class="calendar-instructions">
-      <p>Hacé clic en un día para ver la disponibilidad detallada</p>
+      <div class="instructions-content">
+        <div class="instruction-icon">📅</div>
+        <h4>Vista de calendario activa</h4>
+        <p>Hacé clic en un día que tenga <span class="has-availability">disponibilidad</span> para ver el horario detallado con bloques disponibles y reservados.</p>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-color available"></div>
+            <span>Días con disponibilidad</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color today"></div>
+            <span>Hoy</span>
+          </div>
+        </div>
+      </div>
     </div>
   }
 </div>

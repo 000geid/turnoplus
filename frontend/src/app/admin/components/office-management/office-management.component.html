@@ -35,9 +35,10 @@
     <div *ngFor="let office of offices" class="office-card">
       <div class="office-card__content">
         <div class="office-card__header">
-          <h3>{{ office.name || office.code }}</h3>
+          <h3>{{ office.code }} · {{ office.name || 'Sin nombre' }} (ID {{ office.id }})</h3>
           <span class="office-code">{{ office.code }}</span>
         </div>
+
         <div class="office-card__details">
           <p *ngIf="office.address" class="office-address">
             <i class="material-icons">location_on</i>
@@ -45,22 +46,15 @@
           </p>
         </div>
       </div>
-      <div class="office-card__actions">
-        <button 
-          class="btn btn-secondary btn-sm"
-          (click)="showEditOfficeForm(office)"
-          [disabled]="loading">
-          <i class="material-icons">edit</i>
-          Editar
-        </button>
-        <button 
-          class="btn btn-danger btn-sm"
-          (click)="deleteOffice(office)"
-          [disabled]="loading">
-          <i class="material-icons">delete</i>
-          Eliminar
-        </button>
-      </div>
+
+      <button
+        class="office-card__edit-button"
+        type="button"
+        (click)="showEditOfficeForm(office)"
+        [disabled]="loading"
+        aria-label="Editar consultorio">
+        <i class="material-icons">edit</i>
+      </button>
     </div>
   </div>
 
@@ -84,7 +78,9 @@
             name="code"
             required
             placeholder="Ej: OFC-001"
-            class="form-control">
+            class="form-control"
+            [readOnly]="!!editingOffice">
+          <small *ngIf="editingOffice" class="form-help">El código no se puede cambiar</small>
         </div>
 
         <div class="form-group">
@@ -114,8 +110,17 @@
           <button type="button" class="btn btn-secondary" (click)="cancelForm()">
             Cancelar
           </button>
-          <button 
-            type="submit" 
+          <button
+            *ngIf="editingOffice"
+            type="button"
+            class="btn btn-danger"
+            (click)="deleteOffice(editingOffice)"
+            [disabled]="loading">
+            <i class="material-icons">delete</i>
+            Eliminar
+          </button>
+          <button
+            type="submit"
             class="btn btn-primary"
             [disabled]="loading || !formData.code.trim()">
             <i *ngIf="loading" class="material-icons">refresh</i>

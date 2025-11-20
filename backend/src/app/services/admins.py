@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Iterator
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -11,6 +11,7 @@ from app.db.broker import DBBroker, get_dbbroker
 from app.models.admin import Admin as AdminModel
 from app.models.enums import UserRole
 from app.models.user import User as UserModel
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Admin, AdminCreate, AdminUpdate
 from app.utils.security import hash_password, verify_password
 
@@ -28,6 +29,27 @@ class AdminsService:
             stmt = select(AdminModel).options(joinedload(AdminModel.user))
             admins = session.scalars(stmt).all()
             return [self._to_schema(model) for model in admins if model.user]
+
+    def list_paginated(self, page: int = 1, size: int = 10) -> PaginatedResponse[Admin]:
+        """Get paginated list of admins."""
+        with self._session_scope() as session:
+            stmt = select(AdminModel).options(joinedload(AdminModel.user))
+            
+            # Get total count
+            count_stmt = select(AdminModel).options(joinedload(AdminModel.user))
+            total = session.scalar(select(func.count()).select_from(count_stmt.subquery())) or 0
+            
+            # Apply pagination
+            offset = (page - 1) * size
+            paginated_stmt = stmt.offset(offset).limit(size)
+            admins = session.scalars(paginated_stmt).all()
+            
+            return PaginatedResponse.create(
+                items=[self._to_schema(model) for model in admins if model.user],
+                total=total,
+                page=page,
+                size=size
+            )
 
     def get(self, admin_id: int) -> Admin | None:
         with self._session_scope() as session:
@@ -116,6 +138,10 @@ class AdminsService:
                 return None
 
             if not verify_password(password, admin.user.password_hash):
+                return None
+            
+            # Validate role - only ADMIN role can use this endpoint
+            if admin.user.role != UserRole.ADMIN:
                 return None
 
             return self._to_schema(admin), f"admin-token-{admin.user.id}"

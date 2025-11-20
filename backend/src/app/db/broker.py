@@ -27,6 +27,37 @@ class DBBroker:
             echo=self._settings.echo,
             pool_pre_ping=self._settings.pool_pre_ping,
         )
+        self._engine: Engine = create_engine(
+            self._settings.url,
+            future=True,
+            echo=self._settings.echo,
+            pool_pre_ping=self._settings.pool_pre_ping,
+            connect_args={
+                "ssl_disabled": False
+            }
+        )
+        self._engine: Engine = create_engine(
+            self._settings.url,
+            future=True,
+            echo=self._settings.echo,
+            pool_pre_ping=self._settings.pool_pre_ping,
+        )
+        self._engine: Engine = create_engine(
+            self._settings.url,
+            future=True,
+            echo=self._settings.echo,
+            pool_pre_ping=self._settings.pool_pre_ping,
+            connect_args={
+                "ssl_verify_cert": True,
+                "ssl_ca": None  # Let PyMySQL use system certificates
+            }
+        )
+        self._engine: Engine = create_engine(
+            self._settings.url,
+            future=True,
+            echo=self._settings.echo,
+            pool_pre_ping=self._settings.pool_pre_ping,
+        )
         self._session_factory: sessionmaker[Session] = sessionmaker(
             bind=self._engine,
             expire_on_commit=False,

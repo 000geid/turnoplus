@@ -9,13 +9,7 @@
     </button>
   </header>
 
-  @if (message) {
-    <p class="doctor-records__alert success">{{ message }}</p>
-  }
-
-  @if (error) {
-    <p class="doctor-records__alert error">{{ error }}</p>
-  }
+  <!-- Messages now handled by toast notifications -->
 
   <app-doctor-patients-list
     [patients]="patients"

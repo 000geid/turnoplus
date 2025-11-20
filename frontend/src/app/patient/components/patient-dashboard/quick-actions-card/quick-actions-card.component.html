@@ -1,0 +1,36 @@
+<mat-card class="quick-actions-card">
+  <div class="quick-actions-card__header">
+    <mat-icon class="header-icon">dashboard</mat-icon>
+    <h2>Acciones Rápidas</h2>
+    <p>Gestiona tu atención médica</p>
+  </div>
+
+  <div class="quick-actions-card__content">
+    @for (action of quickActions; track action.id) {
+      <button
+        mat-button
+        class="quick-action-item"
+        (click)="action.action()"
+        [ngClass]="'quick-action-item--' + action.color"
+      >
+        <div class="quick-action-item__icon">
+          <mat-icon>{{ action.icon }}</mat-icon>
+        </div>
+        <div class="quick-action-item__content">
+          <h3>{{ action.title }}</h3>
+          <p>{{ action.description }}</p>
+        </div>
+        <div class="quick-action-item__arrow">
+          <mat-icon>arrow_forward</mat-icon>
+        </div>
+      </button>
+    }
+  </div>
+
+  <div class="quick-actions-card__footer">
+    <button mat-icon-button class="help-button">
+      <mat-icon>help_outline</mat-icon>
+    </button>
+    <span class="help-text">¿Necesitas ayuda?</span>
+  </div>
+</mat-card>

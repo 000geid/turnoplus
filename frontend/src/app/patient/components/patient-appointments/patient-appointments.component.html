@@ -1,10 +1,29 @@
 <section class="patient-appointments">
   <header class="patient-appointments__header">
     <div>
-      <h3>Próximos turnos</h3>
+      <h3>Mis Turnos</h3>
       <p>Seguimiento de tus citas médicas.</p>
     </div>
   </header>
+
+  <!-- Time Period Filter -->
+  @if (appointments.length > 0) {
+    <div class="patient-appointments__filters">
+      @for (period of timePeriods; track period.id) {
+        <button
+          type="button"
+          class="filter-btn"
+          [class.active]="selectedTimePeriod() === period.id"
+          (click)="onTimePeriodChange(period.id)"
+        >
+          {{ period.label }}
+          @if (getTimePeriodCount(period.id) > 0) {
+            <span class="filter-count">{{ getTimePeriodCount(period.id) }}</span>
+          }
+        </button>
+      }
+    </div>
+  }
 
   @if (loading && !appointments.length) {
     <p class="patient-appointments__placeholder">Cargando turnos…</p>
@@ -12,42 +31,60 @@
     <p class="patient-appointments__placeholder">
       Todavía no tenés turnos agendados. Usá la agenda para reservar tu próxima cita.
     </p>
+  } @else if (!hasAppointmentsInPeriod()) {
+    <p class="patient-appointments__placeholder">
+      No hay turnos en el período seleccionado.
+    </p>
   } @else {
-    <ul class="patient-appointments__list">
-      @for (item of appointments; track item.id) {
-        <li class="patient-appointments__item">
-          <div class="patient-appointments__summary">
-            <h4>Turno con profesional #{{ item.doctor_id }}</h4>
-            <p>
-              {{ item.startAt | date: 'EEEE d MMMM, HH:mm' }} -
-              {{ item.endAt | date: 'HH:mm' }}
-            </p>
-          </div>
-
-          <span class="patient-appointments__status" [ngClass]="item.status">
-            {{ statusLabels[item.status] }}
-          </span>
-
-          <div class="patient-appointments__actions">
-            <button
-              type="button"
-              class="btn"
-              (click)="onConfirm(item.id)"
-              [disabled]="isActionDisabled(item.id, item.status)"
-            >
-              {{ actionId === item.id ? 'Actualizando…' : 'Confirmar' }}
-            </button>
-            <button
-              type="button"
-              class="btn btn-secondary"
-              (click)="onCancel(item.id)"
-              [disabled]="isActionDisabled(item.id, item.status)"
-            >
-              Cancelar
-            </button>
-          </div>
-        </li>
+    <div class="patient-appointments__sections">
+      @if (selectedTimePeriod() !== 'all') {
+        <div class="section-header">
+          <h4>{{ currentPeriodLabel() }}</h4>
+        </div>
       }
-    </ul>
+      
+      <ul class="patient-appointments__list">
+        @for (item of filteredAppointments(); track item.id) {
+          <li class="patient-appointments__item" [ngClass]="getAppointmentStatusClass(item)">
+            <div class="patient-appointments__summary">
+              <h4>Turno con {{ getDoctorName(item.doctor_id) }}</h4>
+              <p>
+                {{ formatDateSpanish(item.startAt) }}, {{ formatTimeSpanish(item.startAt) }} -
+                {{ formatTimeSpanish(item.endAt) }}
+              </p>
+            </div>
+
+            <span class="patient-appointments__status" [ngClass]="item.status">
+              {{ statusLabels[item.status] }}
+            </span>
+
+            <div class="patient-appointments__actions">
+              @if (item.status !== 'canceled' && item.status !== 'completed') {
+                <button
+                  type="button"
+                  class="btn"
+                  (click)="onConfirm(item.id)"
+                  [disabled]="isActionDisabled(item.id, item.status)"
+                >
+                  {{ actionId === item.id ? 'Actualizando…' : 'Confirmar' }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  (click)="onCancel(item.id)"
+                  [disabled]="isActionDisabled(item.id, item.status)"
+                >
+                  Cancelar
+                </button>
+              } @else {
+                <span class="action-disabled-text">
+                  {{ item.status === 'completed' ? 'Completado' : 'Cancelado' }}
+                </span>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    </div>
   }
 </section>

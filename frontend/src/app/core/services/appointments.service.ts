@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
@@ -20,6 +20,25 @@ export class AppointmentsService {
     return this.http.get<AppointmentDto[]>(`${API_BASE_URL}/appointments/patients/${patientId}`);
   }
 
+  listForPatientFiltered(
+    patientId: number,
+    startDate?: string,
+    endDate?: string
+  ): Observable<AppointmentDto[]> {
+    let params = new HttpParams();
+    if (startDate) {
+      params = params.set('start_date', startDate);
+    }
+    if (endDate) {
+      params = params.set('end_date', endDate);
+    }
+    
+    return this.http.get<AppointmentDto[]>(
+      `${API_BASE_URL}/appointments/patients/${patientId}/filtered`,
+      { params }
+    );
+  }
+
   listForDoctor(doctorId: number): Observable<AppointmentDto[]> {
     return this.http.get<AppointmentDto[]>(`${API_BASE_URL}/appointments/doctors/${doctorId}`);
   }
@@ -33,7 +52,7 @@ export class AppointmentsService {
   }
 
   listDoctorAvailability(doctorId: number): Observable<AvailabilityDto[]> {
-    return this.http.get<AvailabilityDto[]>(`${API_BASE_URL}/appointments/doctor/${doctorId}/availability`);
+    return this.http.get<AvailabilityDto[]>(`${API_BASE_URL}/doctors/${doctorId}/availability`);
   }
 
   createAvailability(payload: AvailabilityCreateRequest): Observable<AvailabilityDto> {

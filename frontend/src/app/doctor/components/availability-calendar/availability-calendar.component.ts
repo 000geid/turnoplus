@@ -21,9 +21,11 @@ export class AvailabilityCalendarComponent {
   @Input() loading = false;
   @Output() daySelected = new EventEmitter<Date>();
   @Output() availabilitySelected = new EventEmitter<AvailabilityDto>();
+  @Output() configureAvailability = new EventEmitter<Date>();
 
   readonly currentDate = signal(new Date());
   readonly selectedDate = signal<Date | null>(null);
+  readonly now = new Date();
 
   readonly currentMonth = computed(() => this.currentDate().getMonth());
   readonly currentYear = computed(() => this.currentDate().getFullYear());
@@ -105,6 +107,27 @@ export class AvailabilityCalendarComponent {
     this.availabilitySelected.emit(availability);
   }
 
+  configureAvailabilityForDay(date: Date): void {
+    this.configureAvailability.emit(date);
+  }
+
+  selectDayWithConfigure(day: CalendarDay): void {
+    this.selectDay(day);
+    // If the day has no availability, emit configure event
+    if (day.availability.length === 0) {
+      this.configureAvailability.emit(day.date);
+    }
+  }
+
+  isBlockInPast(block: any): boolean {
+    return new Date(block.startAt) < this.now;
+  }
+
+  getBlockPatientName(block: any): string {
+    // AppointmentBlockDto doesn't have patient_name, return empty string
+    return '';
+  }
+
   getTotalBlocksForDay(day: CalendarDay): number {
     return day.availability.reduce((total, avail) => total + (avail.blocks?.length || 0), 0);
   }
@@ -128,9 +151,17 @@ export class AvailabilityCalendarComponent {
   getDayAvailabilitySummary(day: CalendarDay): string {
     const total = this.getTotalBlocksForDay(day);
     const available = this.getAvailableBlocksForDay(day);
-    const booked = this.getBookedBlocksForDay(day);
     
     if (total === 0) return '';
     return `${available}/${total} disponibles`;
+  }
+
+  getIsPastDay(day: CalendarDay): boolean {
+    return day.date < this.now;
+  }
+
+  isWeekend(day: CalendarDay): boolean {
+    const dayOfWeek = day.date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
   }
 }

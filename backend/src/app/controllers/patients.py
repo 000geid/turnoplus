@@ -1,4 +1,5 @@
 from app.db.broker import get_dbbroker
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Patient, PatientCreate, PatientUpdate
 from app.services.patients import PatientsService
 
@@ -8,6 +9,13 @@ def list_patients() -> list[Patient]:
     with broker.session() as session:
         svc = PatientsService(session)
         return svc.list()
+
+
+def list_patients_paginated(page: int = 1, size: int = 10) -> PaginatedResponse[Patient]:
+    broker = get_dbbroker()
+    with broker.session() as session:
+        svc = PatientsService(session)
+        return svc.list_paginated(page=page, size=size)
 
 
 def get_patient(patient_id: int) -> Patient | None:

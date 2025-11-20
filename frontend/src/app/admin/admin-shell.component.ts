@@ -1,102 +1,85 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { TabbedShellComponent, TabConfig } from '../shared/components/tabbed-shell/tabbed-shell.component';
-import { DoctorManagementComponent } from './components/doctor-management/doctor-management.component';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+
 import { OfficeManagementComponent } from './components/office-management/office-management.component';
-import { UserManagementComponent } from './components/user-management/user-management.component';
+import { UnifiedUserManagementComponent } from './components/unified-user-management/unified-user-management.component';
+import { SystemSettingsComponent } from './components/system-settings/system-settings.component';
+import {
+  DashboardSidebarComponent,
+  DashboardSidebarItem
+} from '../shared/components/dashboard-sidebar/dashboard-sidebar.component';
+import { DashboardMobileMenuComponent } from '../shared/components/dashboard-mobile-menu/dashboard-mobile-menu.component';
 
 @Component({
   selector: 'app-admin-shell',
   standalone: true,
-  imports: [TabbedShellComponent, DoctorManagementComponent, OfficeManagementComponent, UserManagementComponent],
-  template: `
-    <app-tabbed-shell
-      title="Panel del administrador"
-      subtitle="Gestioná usuarios, doctores y configuración del sistema."
-      [tabs]="tabs"
-    >
-      <div slot="actions">
-        <button class="btn btn-primary" type="button">
-          Configuración
-        </button>
-      </div>
-
-      <div slot="dashboard">
-        <div class="admin-dashboard">
-          <div class="admin-dashboard__stats">
-            <div class="stat-card">
-              <h3>Usuarios Totales</h3>
-              <p class="stat-number">0</p>
-            </div>
-            <div class="stat-card">
-              <h3>Doctores Activos</h3>
-              <p class="stat-number">0</p>
-            </div>
-            <div class="stat-card">
-              <h3>Turnos Hoy</h3>
-              <p class="stat-number">0</p>
-            </div>
-            <div class="stat-card">
-              <h3>Registros Médicos</h3>
-              <p class="stat-number">0</p>
-            </div>
-          </div>
-          
-          <div class="admin-dashboard__recent">
-            <h3>Actividad Reciente</h3>
-            <p class="placeholder">No hay actividad reciente para mostrar.</p>
-          </div>
-        </div>
-      </div>
-
-      <div slot="users">
-        <app-user-management></app-user-management>
-      </div>
-
-      <div slot="doctors">
-        <app-doctor-management></app-doctor-management>
-      </div>
-
-      <div slot="offices">
-        <app-office-management></app-office-management>
-      </div>
-
-      <div slot="settings">
-        <div class="admin-section">
-          <h3>Configuración del Sistema</h3>
-          <p class="placeholder">Configuraciones del sistema en desarrollo.</p>
-        </div>
-      </div>
-    </app-tabbed-shell>
-  `,
+  imports: [
+    CommonModule,
+    MatIconModule,
+    MatButtonModule,
+    DashboardSidebarComponent,
+    DashboardMobileMenuComponent,
+    UnifiedUserManagementComponent,
+    OfficeManagementComponent,
+    SystemSettingsComponent
+  ],
+  templateUrl: './admin-shell.component.html',
   styleUrl: './admin-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminShellComponent {
-  readonly tabs: TabConfig[] = [
+  private readonly router = inject(Router);
+
+  readonly mobileSidebarOpen = signal(false);
+  readonly navigationItems: DashboardSidebarItem[] = [
     {
       id: 'dashboard',
       label: 'Dashboard',
-      icon: 'dashboard'
+      icon: 'dashboard',
+      route: '/admin/dashboard'
     },
     {
       id: 'users',
       label: 'Usuarios',
-      icon: 'people'
-    },
-    {
-      id: 'doctors',
-      label: 'Doctores',
-      icon: 'medical_services'
+      icon: 'people',
+      route: '/admin/users'
     },
     {
       id: 'offices',
       label: 'Consultorios',
-      icon: 'business'
+      icon: 'business',
+      route: '/admin/offices'
     },
     {
       id: 'settings',
       label: 'Configuración',
-      icon: 'settings'
+      icon: 'settings',
+      route: '/admin/settings'
     }
   ];
+
+  readonly currentRoute = computed(() => this.router.url.split('?')[0]);
+
+  readonly dashboardStats = [
+    { label: 'Usuarios Totales', value: '0' },
+    { label: 'Doctores Activos', value: '0' },
+    { label: 'Turnos Hoy', value: '0' },
+    { label: 'Registros Médicos', value: '0' }
+  ];
+
+  toggleMobileSidebar(): void {
+    this.mobileSidebarOpen.update((open) => !open);
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen.set(false);
+  }
+
+  onNavigation(route: string): void {
+    this.router.navigate([route]);
+    this.closeMobileSidebar();
+  }
 }

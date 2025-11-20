@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.controllers.users import (
     create_user,
@@ -6,9 +6,11 @@ from app.controllers.users import (
     get_user,
     login_user,
     list_users,
+    list_users_paginated,
     update_user,
 )
 from app.schemas.auth import LoginRequest, UserLoginResponse
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import User, UserCreate, UserUpdate
 
 
@@ -18,6 +20,14 @@ router = APIRouter()
 @router.get("/", response_model=list[User])
 def route_list_users():
     return list_users()
+
+
+@router.get("/paginated", response_model=PaginatedResponse[User])
+def route_list_users_paginated(
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, le=100, description="Items per page")
+):
+    return list_users_paginated(page=page, size=size)
 
 
 @router.get("/{user_id}", response_model=User)

@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.enums import UserRole
 from app.models.user import User as UserModel
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import User, UserCreate, UserUpdate
 from app.utils.security import hash_password, verify_password
 
@@ -23,6 +24,23 @@ class UsersService:
     def list(self) -> list[User]:
         users = self._session.scalars(select(UserModel)).all()
         return [self._to_schema(user) for user in users]
+
+    def list_paginated(self, page: int = 1, size: int = 10) -> PaginatedResponse[User]:
+        """Get paginated list of users."""
+        # Get total count
+        total = self._session.scalar(select(func.count()).select_from(UserModel)) or 0
+        
+        # Apply pagination
+        offset = (page - 1) * size
+        query = select(UserModel).offset(offset).limit(size)
+        users = self._session.scalars(query).all()
+        
+        return PaginatedResponse.create(
+            items=[self._to_schema(user) for user in users],
+            total=total,
+            page=page,
+            size=size
+        )
 
     def get(self, user_id: int) -> Optional[User]:
         model = self._session.get(UserModel, user_id)
@@ -72,6 +90,16 @@ class UsersService:
         self._session.flush()
         return True
 
+    def authenticate(self, email: str, password: str) -> Optional[User]:
+        model = self._session.scalar(
+            select(UserModel).where(UserModel.email == email)
+        )
+        if not model or not model.is_active:
+            return None
+        if not verify_password(password, model.password_hash):
+            return None
+        
+        return self._to_schema(model)
     # ------------------------------------------------------------------
     def authenticate(self, email: str, password: str) -> Optional[User]:
         model = self._session.scalar(
@@ -81,6 +109,11 @@ class UsersService:
             return None
         if not verify_password(password, model.password_hash):
             return None
+        
+        # Validate role - only PATIENT role can use this endpoint
+        if model.role != UserRole.PATIENT:
+            return None
+            
         return self._to_schema(model)
 
     # ------------------------------------------------------------------

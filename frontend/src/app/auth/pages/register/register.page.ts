@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
+import { ToastService } from '../../../shared/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -15,6 +16,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class RegisterPage {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly form = this.fb.group({
@@ -25,21 +27,21 @@ export class RegisterPage {
   });
 
   isSubmitting = false;
-  errorMessage = '';
 
   onSubmit(): void {
     if (this.form.invalid || this.form.value.password !== this.form.value.confirmPassword) {
       if (this.form.value.password !== this.form.value.confirmPassword) {
-        this.errorMessage = 'Las contraseñas no coinciden.';
+        this.toastService.error('Las contraseñas no coinciden.');
       } else {
-        this.errorMessage = 'Completá los datos obligatorios.';
+        this.toastService.error('Completá los datos obligatorios.');
       }
       this.form.markAllAsTouched();
       return;
     }
 
-    this.errorMessage = '';
     this.isSubmitting = true;
+    this.toastService.info('Creando tu cuenta...', { config: { duration: 0 } });
+    
     const payload = {
       full_name: this.form.value.full_name ?? undefined,
       email: this.form.value.email!,
@@ -49,11 +51,12 @@ export class RegisterPage {
     this.authService.registerPatient(payload).subscribe({
       next: () => {
         this.isSubmitting = false;
+        this.toastService.success('¡Cuenta creada exitosamente! Bienvenido.');
         this.router.navigate(['/patient']);
       },
       error: () => {
         this.isSubmitting = false;
-        this.errorMessage = 'No pudimos crear tu cuenta. Probá más tarde.';
+        this.toastService.error('No pudimos crear tu cuenta. Probá más tarde.');
       }
     });
   }
