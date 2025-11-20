@@ -1,6 +1,6 @@
 import { environment as appEnvironment } from '../../../environments/environment';
 
-const backendTunnelHost = 'backend-tunnel.ogeid.xyz';
+const backendTunnelHost = 'turnoplus.onrender.com';
 const backendTunnelBaseUrl = `https://${backendTunnelHost}`;
 
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
