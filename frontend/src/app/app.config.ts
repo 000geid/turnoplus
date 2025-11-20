@@ -8,6 +8,8 @@ import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions } from '@angular/
 
 import { routes } from './app.routes';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
+import { environment } from '../environments/environment';
+import { ENVIRONMENT_CONFIG } from './core/config/environment.config';
 
 // Angular Material standalone components import their own providers, so we don't need global Material providers
 
@@ -29,6 +31,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     DatePipe,
     { provide: LOCALE_ID, useValue: 'es-ES' },
-    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: customTooltipDefaults }
+    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: customTooltipDefaults },
+    { provide: ENVIRONMENT_CONFIG, useValue: environment }
   ]
 };
