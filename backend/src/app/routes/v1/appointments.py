@@ -9,6 +9,8 @@ from app.controllers.appointments import (
     complete_appointment,
     confirm_appointment,
     create_availability,
+    delete_availability,
+    delete_unbooked_blocks,
     list_availability,
     list_doctor_appointments,
     list_patient_appointments,
@@ -92,3 +94,19 @@ def route_create_availability(data: AvailabilityCreate):
 @router.patch("/availability/{availability_id}", response_model=Availability)
 def route_update_availability(availability_id: int, data: AvailabilityUpdate):
     return update_availability(availability_id, data)
+
+
+@router.delete("/availability/{availability_id}", status_code=204)
+def route_delete_availability(availability_id: int):
+    delete_availability(availability_id)
+
+
+@router.delete("/availability/{availability_id}/unbooked", status_code=204)
+def route_delete_unbooked_blocks(availability_id: int):
+    """Delete only unbooked blocks for an availability. If none remain, availability is removed."""
+    try:
+        delete_unbooked_blocks(availability_id)
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

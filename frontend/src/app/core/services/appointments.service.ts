@@ -69,6 +69,12 @@ export class AppointmentsService {
     );
   }
 
+  deleteUnbookedAvailability(availabilityId: number): Observable<AvailabilityDto | null> {
+    return this.http.delete<AvailabilityDto | null>(
+      `${API_BASE_URL}/appointments/availability/${availabilityId}/unbooked`
+    );
+  }
+
   book(payload: AppointmentCreateRequest): Observable<AppointmentDto> {
     return this.http.post<AppointmentDto>(`${API_BASE_URL}/appointments`, payload);
   }

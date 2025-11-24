@@ -177,11 +177,13 @@
     @if (selectedSlotForDelete()) {
       <div class="delete-confirmation">
         <div class="confirmation-content">
-          <h4>¿Eliminar disponibilidad?</h4>
+          <h4>¿Eliminar turnos libres?</h4>
           <p>
-            ¿Estás seguro que querés eliminar esta disponibilidad?
+            ¿Estás seguro que querés eliminar los turnos que no están reservados?
             <br>
             <strong>{{ formatTimeSpanish(selectedSlotForDelete()!.startAt) }} - {{ formatTimeSpanish(selectedSlotForDelete()!.endAt) }}</strong>
+            <br>
+            Las reservas confirmadas se conservan.
           </p>
           <div class="confirmation-actions">
             <button 

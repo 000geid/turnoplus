@@ -354,25 +354,36 @@ export class DoctorShellComponent {
     if (!this.ensureDoctorSession()) {
       return;
     }
+    const isDeleteUnbooked = event.mode === 'delete-unbooked';
     this.availabilityMutationId.set(event.id);
-    this.toastService.info('Actualizando disponibilidad...', { config: { duration: 0 } });
+    this.toastService.info(isDeleteUnbooked ? 'Eliminando turnos libres...' : 'Actualizando disponibilidad...', { config: { duration: 0 } });
 
-    this.appointmentsService
-      .updateAvailability(event.id, {})
+    const request$ = isDeleteUnbooked
+      ? this.appointmentsService.deleteUnbookedAvailability(event.id)
+      : this.appointmentsService.updateAvailability(event.id, {});
+
+    request$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (updated) => {
-          this.availability.update((items) =>
-            items
+          this.availability.update((items) => {
+            // If backend removed the availability or returned empty, drop it
+            if (!updated || !updated.blocks || updated.blocks.length === 0) {
+              return items.filter((slot) => slot.id !== event.id);
+            }
+
+            return items
               .map((slot) => (slot.id === updated.id ? updated : slot))
-              .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
-          );
+              .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+          });
           this.availabilityMutationId.set(null);
-          this.toastService.success('Actualizamos tu disponibilidad.');
+          this.toastService.success(isDeleteUnbooked ? 'Turnos libres eliminados.' : 'Actualizamos tu disponibilidad.');
         },
-        error: () => {
+        error: (error) => {
           this.availabilityMutationId.set(null);
-          this.toastService.error('No pudimos actualizar la disponibilidad.');
+          const fallback = isDeleteUnbooked ? 'No pudimos eliminar los turnos libres.' : 'No pudimos actualizar la disponibilidad.';
+          const detail = error?.error?.detail;
+          this.toastService.error(detail || fallback);
         }
       });
   }

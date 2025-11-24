@@ -37,6 +37,7 @@ export interface TimeSlotTemplate {
 
 export interface DoctorAvailabilityUpdateEvent {
   id: number;
+  mode?: 'default' | 'delete-unbooked';
 }
 
 @Component({
@@ -372,7 +373,8 @@ onAvailabilitySelected(availability: AvailabilityDto): void {
         if (event.data && event.data.id) {
           this.isDeleting.set(true);
           this.update.emit({
-            id: event.data.id
+            id: event.data.id,
+            mode: 'delete-unbooked'
           });
           // Note: The actual deletion will be handled by the parent component
           // This would need to be integrated with the existing deletion logic

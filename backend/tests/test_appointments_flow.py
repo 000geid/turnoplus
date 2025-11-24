@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from sqlalchemy import select
 
+from app.models.appointment_block import AppointmentBlock as AppointmentBlockModel
 from app.schemas.appointment import AppointmentCreate, AvailabilityCreate
 from app.schemas.user import DoctorCreate, PatientCreate
 from app.services.appointments import AppointmentsService, ValidationError
@@ -112,3 +114,78 @@ def test_booking_validation_rejects_invalid_dates(db_session, unique_suffix):
                 notes="Should fail validation",
             )
         )
+
+
+@pytest.mark.integration
+def test_doctor_can_delete_unbooked_availability(db_session, unique_suffix):
+    doctor = _make_doctor(DoctorsService(db_session), unique_suffix)
+    appointments = AppointmentsService(db_session)
+
+    start_time = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0) + timedelta(days=1)
+    end_time = start_time + timedelta(hours=2)
+
+    availability = appointments.create_availability(
+        AvailabilityCreate(
+            doctor_id=doctor.id,
+            start_at=start_time,
+            end_at=end_time,
+        )
+    )
+
+    # sanity check: blocks created
+    available = appointments.list_availability(doctor.id)
+    assert available and available[0].blocks
+
+    deleted = appointments.delete_availability(availability.id)
+    assert deleted is True
+
+    remaining = appointments.list_availability(doctor.id)
+    assert remaining == []
+
+    blocks_after_delete = db_session.scalars(
+        select(AppointmentBlockModel.id).where(AppointmentBlockModel.availability_id == availability.id)
+    ).all()
+    assert blocks_after_delete == []
+
+
+@pytest.mark.integration
+def test_doctor_cannot_delete_booked_availability(db_session, unique_suffix):
+    patient = _make_patient(PatientsService(db_session), unique_suffix)
+    doctor = _make_doctor(DoctorsService(db_session), unique_suffix)
+
+    appointments = AppointmentsService(db_session)
+
+    start_time = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0) + timedelta(days=1)
+    end_time = start_time + timedelta(hours=2)
+
+    availability = appointments.create_availability(
+        AvailabilityCreate(
+            doctor_id=doctor.id,
+            start_at=start_time,
+            end_at=end_time,
+        )
+    )
+
+    available_blocks = appointments.list_available_blocks(
+        doctor_id=doctor.id,
+        start_date=start_time,
+        end_date=end_time,
+    )
+    assert available_blocks
+
+    first_block = available_blocks[0]
+    appointments.book(
+        AppointmentCreate(
+            doctor_id=doctor.id,
+            patient_id=patient.id,
+            start_at=first_block.start_at,
+            end_at=first_block.end_at,
+            notes="Booked to block deletion",
+        )
+    )
+
+    with pytest.raises(ValidationError):
+        appointments.delete_availability(availability.id)
+
+    still_there = appointments.list_availability(doctor.id)
+    assert still_there
