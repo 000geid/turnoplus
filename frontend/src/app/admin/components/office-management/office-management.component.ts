@@ -1,6 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OfficeService } from '../../../core/services/office.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { Office, OfficeCreate, OfficeUpdate } from '../../../core/models/office';
@@ -13,6 +15,8 @@ import { Office, OfficeCreate, OfficeUpdate } from '../../../core/models/office'
   styleUrls: ['./office-management.component.scss']
 })
 export class OfficeManagementComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+
   offices: Office[] = [];
   loading = false;
   error: string | null = null;
@@ -41,18 +45,27 @@ export class OfficeManagementComponent implements OnInit {
   loadOffices(): void {
     this.loading = true;
     this.error = null;
+    this.cdr.markForCheck();
     
-    this.officeService.getOffices().subscribe({
-      next: (offices) => {
-        this.offices = offices;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = 'Error al cargar consultorios';
-        this.loading = false;
-        console.error('Error loading offices:', err);
-      }
-    });
+    this.officeService
+      .getOffices()
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.loading = false;
+          // Ensure the OnPush parent gets the state update
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: (offices) => {
+          this.offices = offices;
+        },
+        error: (err) => {
+          this.error = 'Error al cargar consultorios';
+          console.error('Error loading offices:', err);
+        }
+      });
   }
 
   showCreateOfficeForm(): void {
