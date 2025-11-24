@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/051feb63-0b80-4954-8771-72abe870f32c/deploy-status)](https://app.netlify.com/projects/turnoplus-ub/deploys)
+
 # TurnoPlus
 
 Sistema de gestión de citas médicas con tres roles de usuario: Pacientes, Doctores y Administradores. El backend está construido con FastAPI y SQLAlchemy, conectado a una base de datos MySQL. El frontend utiliza Angular 20.
