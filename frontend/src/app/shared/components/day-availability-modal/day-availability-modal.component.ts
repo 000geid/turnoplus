@@ -8,7 +8,7 @@ import {
   signal,
   inject
 } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 
 import { AppointmentBlockDto, AvailabilityDto } from '../../../core/models/appointment';
 import { DoctorDto } from '../../../core/models/user';
@@ -46,7 +46,7 @@ export interface AppointmentSlot {
 @Component({
   selector: 'app-day-availability-modal',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule],
   templateUrl: './day-availability-modal.component.html',
   styleUrl: './day-availability-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

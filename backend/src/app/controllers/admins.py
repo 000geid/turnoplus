@@ -1,7 +1,9 @@
 from app.db.broker import get_dbbroker
+from app.schemas.admin_dashboard import AdminDashboardSummary
 from app.schemas.auth import AdminLoginResponse, LoginRequest
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import Admin, AdminCreate, AdminUpdate
+from app.services.admin_dashboard import AdminDashboardService
 from app.services.admins import AdminsService
 
 
@@ -57,3 +59,10 @@ def login_admin(data: LoginRequest) -> AdminLoginResponse | None:
 
         admin, token = result
         return AdminLoginResponse(access_token=token, user=admin)
+
+
+def get_admin_dashboard_summary() -> AdminDashboardSummary:
+    broker = get_dbbroker()
+    with broker.session() as session:
+        svc = AdminDashboardService(session)
+        return svc.get_summary()

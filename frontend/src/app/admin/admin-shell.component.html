@@ -31,10 +31,13 @@
           <div class="section-header">
             <h2>Panel general</h2>
             <p>Resumen de actividad del sistema</p>
+            @if (statsError()) {
+              <p class="stats-error text-danger">{{ statsError() }}</p>
+            }
           </div>
           <div class="admin-dashboard">
             <div class="admin-dashboard__stats">
-              @for (stat of dashboardStats; track stat.label) {
+              @for (stat of dashboardStats(); track stat.label) {
                 <div class="stat-card">
                   <h3>{{ stat.label }}</h3>
                   <p class="stat-number">{{ stat.value }}</p>

@@ -38,7 +38,12 @@ def route_get_patient(patient_id: int):
 
 @router.post("/", response_model=Patient, status_code=201)
 def route_create_patient(data: PatientCreate):
-    return create_patient(data)
+    try:
+        return create_patient(data)
+    except ValueError as exc:
+        detail = str(exc)
+        status = 409 if "Email already in use" in detail else 400
+        raise HTTPException(status_code=status, detail=detail)
 
 
 @router.put("/{patient_id}", response_model=Patient)
@@ -54,4 +59,3 @@ def route_delete_patient(patient_id: int):
     ok = delete_patient(patient_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Patient not found")
-

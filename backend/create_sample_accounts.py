@@ -67,6 +67,10 @@ def create_sample_accounts():
                 
                 patient_profile = Patient(
                     id=patient_user_id,
+                    document_type="dni",
+                    document_number="20123456",
+                    address="123 Health St, Medical City, MC 12345",
+                    phone="555-0101",
                     date_of_birth=date(1985, 5, 15),
                     medical_record_number="MRN001",
                     emergency_contact="Jane Patient (555-0101)"
