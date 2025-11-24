@@ -461,6 +461,8 @@ class AppointmentsService:
                 end_at=block_end,
                 is_booked=False,
             )
+            # Keep relationship in-memory so the response includes blocks without reloading
+            availability.blocks.append(block)
             self._session.add(block)
             
             current_time = block_end
