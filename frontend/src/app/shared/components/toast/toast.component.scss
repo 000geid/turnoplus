@@ -99,6 +99,23 @@
 
 // Override CDK overlay backdrop that Material snackbar uses
 :host ::ng-deep {
+  .mat-mdc-snack-bar-container.toast-panel {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+
+    .mdc-snackbar__surface,
+    .mat-mdc-snack-bar-surface {
+      background: transparent !important;
+      box-shadow: none !important;
+      filter: none !important;
+      backdrop-filter: none !important;
+    }
+  }
+
   .cdk-overlay-container {
     .cdk-overlay-pane {
       .mat-mdc-snack-bar-container {

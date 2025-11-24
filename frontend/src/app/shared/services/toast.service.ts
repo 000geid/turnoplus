@@ -60,7 +60,8 @@ export class ToastService {
         }
       },
       horizontalPosition: 'center' as const,
-      verticalPosition
+      verticalPosition,
+      panelClass: ['toast-panel', ...(options?.config?.className ? [options.config.className] : [])]
     };
 
     const snackBarRef = this.snackBar.openFromComponent(ToastComponent, config);

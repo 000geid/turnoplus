@@ -1,6 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { UserService } from '../../../core/services/user.service';
 import { DoctorService, DoctorCreate, DoctorUpdate } from '../../../core/services/doctor.service';
 import { PatientsService } from '../../../core/services/patients.service';
@@ -73,6 +76,8 @@ type UserRoleFilter = 'all' | 'patient' | 'doctor' | 'admin';
   styleUrls: ['./unified-user-management.component.scss']
 })
 export class UnifiedUserManagementComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+
   users: (UserDto | DoctorDto | PatientDto)[] = [];
   filteredUsers: (UserDto | DoctorDto | PatientDto)[] = [];
   offices: Office[] = [];
@@ -120,54 +125,65 @@ export class UnifiedUserManagementComponent implements OnInit {
   loadUsers(): void {
     this.loading = true;
     this.error = null;
+    this.cdr.markForCheck();
     
-    // Load all types of users with pagination
-    Promise.all([
-      this.userService.getUsersPaginated(this.pagination).toPromise(),
-      this.doctorService.getDoctorsPaginated(this.pagination).toPromise(),
-      this.patientService.getPatientsPaginated(this.pagination).toPromise()
-    ]).then(([usersResponse, doctorsResponse, patientsResponse]) => {
-      // Combine all users from different types
-      const allUsers = [
-        ...(usersResponse?.items || []),
-        ...(doctorsResponse?.items || []),
-        ...(patientsResponse?.items || [])
-      ];
-      
-      // Sort by name for consistent display
-      this.users = allUsers.sort((a, b) => 
-        a.full_name?.localeCompare(b.full_name || '') || 
-        a.email.localeCompare(b.email)
-      );
-      
-      // Calculate combined pagination info (approximate)
-      const totalFromResponses = [
-        usersResponse?.total || 0,
-        doctorsResponse?.total || 0,
-        patientsResponse?.total || 0
-      ];
-      this.totalUsers = totalFromResponses.reduce((a, b) => a + b, 0);
-      this.totalPages = Math.ceil(this.totalUsers / this.pagination.size);
-      
-      // Apply filters after loading
-      this.applyFilters();
-      this.loading = false;
-    }).catch((err) => {
-      this.error = 'Error al cargar usuarios';
-      this.loading = false;
-      console.error('Error loading users:', err);
-    });
+    forkJoin({
+      usersResponse: this.userService.getUsersPaginated(this.pagination),
+      doctorsResponse: this.doctorService.getDoctorsPaginated(this.pagination),
+      patientsResponse: this.patientService.getPatientsPaginated(this.pagination)
+    })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.loading = false;
+          this.cdr.markForCheck();
+        })
+      )
+      .subscribe({
+        next: ({ usersResponse, doctorsResponse, patientsResponse }) => {
+          const allUsers = [
+            ...(usersResponse?.items || []),
+            ...(doctorsResponse?.items || []),
+            ...(patientsResponse?.items || [])
+          ];
+          
+          this.users = allUsers.sort((a, b) => 
+            a.full_name?.localeCompare(b.full_name || '') || 
+            a.email.localeCompare(b.email)
+          );
+          
+          const totalFromResponses = [
+            usersResponse?.total || 0,
+            doctorsResponse?.total || 0,
+            patientsResponse?.total || 0
+          ];
+          this.totalUsers = totalFromResponses.reduce((a, b) => a + b, 0);
+          this.totalPages = Math.ceil(this.totalUsers / this.pagination.size);
+          
+          this.applyFilters();
+        },
+        error: (err) => {
+          this.error = 'Error al cargar usuarios';
+          console.error('Error loading users:', err);
+        }
+      });
   }
 
   loadOffices(): void {
-    this.officeService.getOffices().subscribe({
-      next: (offices) => {
-        this.offices = offices;
-      },
-      error: (err) => {
-        console.error('Error loading offices:', err);
-      }
-    });
+    this.officeService
+      .getOffices()
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.cdr.markForCheck())
+      )
+      .subscribe({
+        next: (offices) => {
+          this.offices = offices;
+        },
+        error: (err) => {
+          console.error('Error loading offices:', err);
+        }
+      });
   }
 
   // Filter methods

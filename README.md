@@ -173,6 +173,12 @@ El frontend estará disponible en `http://localhost:4200`
 - `npm test`: Ejecutar pruebas unitarias
 - `npm run lint`: Verificar calidad de código
 
+## Pruebas Backend
+
+- El suite de FastAPI usa pytest + MySQL (sin SQLite en memoria).
+- Guía rápida: `backend/TESTING.md`.
+- Ejecutar: `cd backend && uv run pytest -m integration` (requiere `TEST_DATABASE_URL` apuntando a tu base de datos de pruebas).
+
 ## Estructura del Proyecto
 
 ```
