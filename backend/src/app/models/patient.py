@@ -20,6 +20,10 @@ class Patient(Base):
     id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
+    document_type: Mapped[str] = mapped_column(String(20), nullable=False, default="dni")
+    document_number: Mapped[str | None] = mapped_column(String(50))
+    address: Mapped[str | None] = mapped_column(String(255))
+    phone: Mapped[str | None] = mapped_column(String(50))
     date_of_birth: Mapped[date | None] = mapped_column(Date)
     medical_record_number: Mapped[str | None] = mapped_column(String(50), unique=True)
     emergency_contact: Mapped[str | None] = mapped_column(String(255))

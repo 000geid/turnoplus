@@ -14,6 +14,10 @@ export interface BaseUserDto {
 export type UserDto = BaseUserDto;
 
 export interface PatientDto extends BaseUserDto {
+  document_type?: 'dni' | null;
+  document_number?: string | null;
+  address?: string | null;
+  phone?: string | null;
   date_of_birth?: string | null;
   medical_record_number?: string | null;
   emergency_contact?: string | null;
@@ -46,6 +50,10 @@ export interface PatientUpdateRequest {
   is_active?: boolean | null;
   is_superuser?: boolean | null;
   full_name?: string | null;
+  document_type?: 'dni' | null;
+  document_number?: string | null;
+  address?: string | null;
+  phone?: string | null;
   date_of_birth?: string | null;
   medical_record_number?: string | null;
   emergency_contact?: string | null;

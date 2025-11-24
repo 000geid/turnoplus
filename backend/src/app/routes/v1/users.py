@@ -48,7 +48,12 @@ def route_login_user(data: LoginRequest):
 
 @router.post("/", response_model=User, status_code=201)
 def route_create_user(data: UserCreate):
-    return create_user(data)
+    try:
+        return create_user(data)
+    except ValueError as exc:
+        detail = str(exc)
+        status = 409 if "Email already in use" in detail else 400
+        raise HTTPException(status_code=status, detail=detail)
 
 
 @router.put("/{user_id}", response_model=User)

@@ -64,18 +64,22 @@ class PatientsService:
         payload = data.model_dump()
         password = payload.pop("password")
 
-        user = UserModel(
-            email=payload.pop("email"),
-            password_hash=hash_password(password),
-            is_active=payload.pop("is_active", True),
-            is_superuser=payload.pop("is_superuser", False),
-            full_name=payload.pop("full_name", None),
-            role=UserRole.PATIENT,
-        )
-        patient = PatientModel(**payload)
-        user.patient_profile = patient
-
         with self._session_scope() as session:
+            existing_user = session.scalar(select(UserModel).where(UserModel.email == payload["email"]))
+            if existing_user:
+                raise ValueError("Email already in use")
+
+            user = UserModel(
+                email=payload.pop("email"),
+                password_hash=hash_password(password),
+                is_active=payload.pop("is_active", True),
+                is_superuser=payload.pop("is_superuser", False),
+                full_name=payload.pop("full_name", None),
+                role=UserRole.PATIENT,
+            )
+            patient = PatientModel(**payload)
+            user.patient_profile = patient
+
             session.add(user)
             try:
                 session.flush()
@@ -162,6 +166,10 @@ class PatientsService:
             is_superuser=user.is_superuser,
             full_name=user.full_name,
             role=user.role.value,
+            document_type=model.document_type,
+            document_number=model.document_number,
+            address=model.address,
+            phone=model.phone,
             date_of_birth=model.date_of_birth,
             medical_record_number=model.medical_record_number,
             emergency_contact=model.emergency_contact,

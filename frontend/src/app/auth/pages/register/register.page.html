@@ -6,8 +6,11 @@
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="auth-card__form">
     <label class="field">
-      <span>Nombre completo (opcional)</span>
+      <span>Nombre completo</span>
       <input formControlName="full_name" class="input" placeholder="Nombre y apellido" />
+      @if (form.controls.full_name.touched && form.controls.full_name.invalid) {
+        <small class="field__error">Indicá tu nombre y apellido.</small>
+      }
     </label>
 
     <label class="field">
@@ -38,7 +41,43 @@
       </label>
     </div>
 
-    <!-- Messages now handled by toast notifications -->
+    <div class="form-grid">
+      <label class="field">
+        <span>Tipo de documento</span>
+        <select formControlName="document_type" class="input">
+          <option value="dni">DNI</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Número de documento</span>
+        <input
+          formControlName="document_number"
+          class="input"
+          inputmode="numeric"
+          placeholder="Ej: 12345678"
+        />
+        @if (form.controls.document_number.touched && form.controls.document_number.invalid) {
+          <small class="field__error">Ingresá un DNI válido (solo números).</small>
+        }
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Dirección</span>
+      <input formControlName="address" class="input" placeholder="Calle y número" />
+      @if (form.controls.address.touched && form.controls.address.invalid) {
+        <small class="field__error">Ingresá tu domicilio.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Teléfono</span>
+      <input formControlName="phone" class="input" placeholder="Ej: +54 9 11 5555-0000" />
+      @if (form.controls.phone.touched && form.controls.phone.invalid) {
+        <small class="field__error">Ingresá un teléfono de contacto.</small>
+      }
+    </label>
 
     <button class="btn btn-primary auth-card__submit" type="submit" [disabled]="isSubmitting">
       {{ isSubmitting ? 'Creando cuenta...' : 'Crear cuenta' }}

@@ -15,6 +15,10 @@ class User(BaseModel):
 
 
 class Patient(User):
+    document_type: Literal["dni"] | None = "dni"
+    document_number: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
     date_of_birth: Optional[date] = None
     medical_record_number: Optional[str] = None
     emergency_contact: Optional[str] = None
@@ -41,6 +45,10 @@ class UserCreate(BaseModel):
 
 
 class PatientCreate(UserCreate):
+    document_type: Literal["dni"] = "dni"
+    document_number: str
+    address: str
+    phone: str
     date_of_birth: Optional[date] = None
     medical_record_number: Optional[str] = None
     emergency_contact: Optional[str] = None
@@ -67,6 +75,10 @@ class UserUpdate(BaseModel):
 
 
 class PatientUpdate(UserUpdate):
+    document_type: Optional[Literal["dni"]] = None
+    document_number: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
     date_of_birth: Optional[date] = None
     medical_record_number: Optional[str] = None
     emergency_contact: Optional[str] = None
@@ -82,4 +94,3 @@ class DoctorUpdate(UserUpdate):
 class AdminUpdate(UserUpdate):
     role: Optional[Literal["superadmin", "manager", "support"]] = None
     permissions: Optional[set[str]] = None
-

@@ -71,6 +71,11 @@
   font-size: var(--font-size-base);
 }
 
+.stats-error {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
 // Responsive design for admin shell
 @media (max-width: 768px) {
   .admin-dashboard {

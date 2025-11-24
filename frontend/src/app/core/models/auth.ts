@@ -23,7 +23,11 @@ export type AdminLoginResponseDto = LoginResponseBaseDto<AdminDto>;
 export interface PatientRegisterRequest {
   email: string;
   password: string;
-  full_name?: string | null;
+  full_name: string;
+  document_type: 'dni';
+  document_number: string;
+  address: string;
+  phone: string;
   date_of_birth?: string | null;
   medical_record_number?: string | null;
   emergency_contact?: string | null;
