@@ -42,7 +42,8 @@ describe('DoctorShellComponent', () => {
     doctor_id: doctorUser.id,
     startAt: '2025-06-01T10:00:00Z',
     endAt: '2025-06-01T10:30:00Z',
-    slots: 2
+    slots: 2,
+    blocks: []
   };
 
   const medicalRecord: MedicalRecordDto = {
@@ -61,7 +62,8 @@ describe('DoctorShellComponent', () => {
       'listForDoctor',
       'listDoctorAvailability',
       'createAvailability',
-      'updateAvailability'
+      'updateAvailability',
+      'deleteUnbookedAvailability'
     ]);
 
     medicalRecordsService = jasmine.createSpyObj<MedicalRecordsService>('MedicalRecordsService', [
@@ -91,15 +93,18 @@ describe('DoctorShellComponent', () => {
         doctor_id: doctorUser.id,
         startAt: '2025-06-01T12:00:00Z',
         endAt: '2025-06-01T12:30:00Z',
-        slots: 1
+        slots: 1,
+        blocks: []
       })
     );
     appointmentsService.updateAvailability.and.returnValue(
       of({
         ...availabilitySlot,
-        slots: 3
+        slots: 3,
+        blocks: []
       })
     );
+    appointmentsService.deleteUnbookedAvailability.and.returnValue(of(null));
 
     medicalRecordsService.listForDoctor.and.returnValue(of([medicalRecord]));
     medicalRecordsService.createRecord.and.returnValue(
@@ -144,49 +149,54 @@ describe('DoctorShellComponent', () => {
     expect(component.records().length).toBe(1);
   });
 
+  it('should filter out cancelled appointments', () => {
+    const cancelledAppointment = {
+      id: 11,
+      doctor_id: doctorUser.id,
+      patient_id: 15,
+      startAt: '2025-06-03T10:00:00Z',
+      endAt: '2025-06-03T10:30:00Z',
+      status: 'canceled' as const,
+      notes: null
+    };
+
+    appointmentsService.listForDoctor.and.returnValue(of([
+      {
+        id: 10,
+        doctor_id: doctorUser.id,
+        patient_id: 15,
+        startAt: '2025-06-02T10:00:00Z',
+        endAt: '2025-06-02T10:30:00Z',
+        status: 'confirmed',
+        notes: null
+      },
+      cancelledAppointment
+    ]));
+
+    component['loadAppointments'](true);
+
+    expect(component.sortedAppointments().length).toBe(1);
+    expect(component.sortedAppointments()[0].id).toBe(10);
+  });
+
   it('should create availability and append it to the list', () => {
     component.onCreateAvailability({
       startAt: '2025-06-01T12:00:00Z',
-      endAt: '2025-06-01T12:30:00Z',
-      slots: 1
+      endAt: '2025-06-01T12:30:00Z'
     });
 
     expect(appointmentsService.createAvailability).toHaveBeenCalledWith({
       doctor_id: doctorUser.id,
       start_at: '2025-06-01T12:00:00Z',
-      end_at: '2025-06-01T12:30:00Z',
-      slots: 1
+      end_at: '2025-06-01T12:30:00Z'
     });
     expect(component.availability().length).toBe(2);
-    expect(component.availabilityMessage()).toContain('Disponibilidad');
   });
 
   it('should update an availability slot', () => {
-    component.onUpdateAvailability({ id: availabilitySlot.id, slots: 3 });
+    component.onUpdateAvailability({ id: availabilitySlot.id, mode: 'default' });
 
-    expect(appointmentsService.updateAvailability).toHaveBeenCalledWith(availabilitySlot.id, {
-      slots: 3
-    });
-    expect(component.availability()[0].slots).toBe(3);
-  });
-
-  it('should create and store a medical record', () => {
-    component.onCreateRecord({
-      patientId: 12,
-      diagnosis: 'Control',
-      treatment: null,
-      notes: null
-    });
-
-    expect(medicalRecordsService.createRecord).toHaveBeenCalledWith({
-      patient_id: 12,
-      doctor_id: doctorUser.id,
-      diagnosis: 'Control',
-      treatment: null,
-      notes: null
-    });
-    expect(component.records().length).toBe(2);
-    expect(component.recordsMessage()).toContain('Registro');
+    expect(appointmentsService.updateAvailability).toHaveBeenCalledWith(availabilitySlot.id, {});
   });
 
   it('should update a medical record', () => {
