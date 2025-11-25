@@ -45,7 +45,7 @@ export class PatientBookingComponent {
   readonly isLoadingBlocks = signal<boolean>(false);
   readonly isBooking = signal<boolean>(false);
   readonly selectedCalendarDay = signal<CalendarDay | null>(null);
-  
+
   // Modal state management
   readonly modalData = signal<DayAvailabilityModalData | null>(null);
 
@@ -53,7 +53,7 @@ export class PatientBookingComponent {
   readonly availabilityByDay = computed(() => {
     const blocks = this.availableBlocks();
     const grouped = new Map<string, AppointmentBlockDto[]>();
-    
+
     blocks.forEach(block => {
       const dateKey = new Date(block.startAt).toDateString();
       if (!grouped.has(dateKey)) {
@@ -61,7 +61,7 @@ export class PatientBookingComponent {
       }
       grouped.get(dateKey)!.push(block);
     });
-    
+
     return grouped;
   });
 
@@ -108,7 +108,7 @@ export class PatientBookingComponent {
     this.modalData.set(modalData);
   }
 
-onCalendarMonthChanged(date: Date): void {
+  onCalendarMonthChanged(date: Date): void {
     const doctor = this.selectedDoctor();
     if (doctor) {
       this.loadAvailabilityForDoctor(doctor.id);
@@ -160,12 +160,12 @@ onCalendarMonthChanged(date: Date): void {
 
   private loadAvailabilityForDoctor(doctorId: number): void {
     this.isLoadingBlocks.set(true);
-    
+
     // Get blocks for the next 60 days
     const startDate = new Date();
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 60);
-    
+
     this.appointmentsService
       .getAvailableBlocks(
         doctorId,
@@ -176,7 +176,7 @@ onCalendarMonthChanged(date: Date): void {
       .subscribe({
         next: (blocks) => {
           // Filter out past blocks
-          const futureBlocks = blocks.filter(block => 
+          const futureBlocks = blocks.filter(block =>
             new Date(block.startAt) > this.now
           );
           this.availableBlocks.set(futureBlocks);
@@ -187,6 +187,17 @@ onCalendarMonthChanged(date: Date): void {
           this.toastService.error('No pudimos cargar la disponibilidad del profesional.');
         }
       });
+  }
+
+  /**
+   * Public method to refresh available blocks for the selected doctor.
+   * Useful when blocks may have been freed (e.g., after cancellation).
+   */
+  refreshAvailableBlocks(): void {
+    const doctor = this.selectedDoctor();
+    if (doctor) {
+      this.loadAvailabilityForDoctor(doctor.id);
+    }
   }
 
   // Utility methods
@@ -226,7 +237,7 @@ onCalendarMonthChanged(date: Date): void {
   getFirstAvailableDay(): Date | null {
     const blocks = this.availableBlocks();
     if (blocks.length === 0) return null;
-    
+
     const sortedBlocks = blocks.sort((a, b) =>
       new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
     );
@@ -270,7 +281,7 @@ onCalendarMonthChanged(date: Date): void {
 
   getDoctorAvailabilityMap(): Map<number, number> {
     const availabilityMap = new Map<number, number>();
-    
+
     // For now, since we're only showing availability for the selected doctor,
     // we'll set the availability for the selected doctor only
     const selectedDoctor = this.selectedDoctor();
@@ -278,10 +289,10 @@ onCalendarMonthChanged(date: Date): void {
       // Count all available blocks for the selected doctor
       availabilityMap.set(selectedDoctor.id, this.availableBlocks().length);
     }
-    
+
     // In the future, this could be enhanced to show availability for all doctors
     // by fetching availability data for each doctor in the doctors list
-    
+
     return availabilityMap;
   }
 }

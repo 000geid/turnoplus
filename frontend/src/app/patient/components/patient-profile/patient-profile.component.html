@@ -2,50 +2,55 @@
   <header class="patient-profile__header">
     <h3>Tus datos personales</h3>
     @if (saving) {
-      <span class="patient-profile__saving">Guardando…</span>
+    <span class="patient-profile__saving">Guardando…</span>
     }
   </header>
 
   @if (loading && !patient) {
-    <p class="patient-profile__empty">Cargando información…</p>
+  <p class="patient-profile__empty">Cargando información…</p>
   } @else {
-    <form class="patient-profile__form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-      <label class="field">
-        <span>Nombre completo</span>
-        <input class="input" type="text" formControlName="full_name" placeholder="Tu nombre" />
-      </label>
+  <form class="patient-profile__form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <label class="field">
+      <span>Nombre completo</span>
+      <input class="input" type="text" formControlName="full_name" placeholder="Tu nombre" />
+    </label>
 
-      <label class="field">
-        <span>Email</span>
-        <input class="input" type="email" formControlName="email" placeholder="tu@correo.com" />
-        @if (form.controls.email.touched && form.controls.email.invalid) {
-          <small class="field__error">Ingresá un email válido.</small>
+    <label class="field">
+      <span>Email</span>
+      <input class="input" type="email" formControlName="email" placeholder="tu@correo.com" />
+      @if (form.controls.email.touched && form.controls.email.invalid) {
+      <small class="field__error">Ingresá un email válido.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Número de historia clínica</span>
+      <input class="input" type="text" formControlName="medical_record_number" placeholder="Ej. HC-1234" />
+    </label>
+
+    <label class="field">
+      <span>Contacto de emergencia</span>
+      <input class="input" type="text" formControlName="emergency_contact" placeholder="Nombre y teléfono" />
+    </label>
+
+    <label class="field">
+      <span>Obra Social</span>
+      <select class="input" formControlName="obra_social_name">
+        <option value="">Seleccioná tu obra social</option>
+        @for (provider of obraSocialProviders; track provider) {
+        <option [value]="provider">{{ provider }}</option>
         }
-      </label>
+      </select>
+    </label>
 
-      <label class="field">
-        <span>Número de historia clínica</span>
-        <input
-          class="input"
-          type="text"
-          formControlName="medical_record_number"
-          placeholder="Ej. HC-1234"
-        />
-      </label>
+    <label class="field">
+      <span>Número de Obra Social</span>
+      <input class="input" type="text" formControlName="obra_social_number" placeholder="Tu número de socio" />
+    </label>
 
-      <label class="field">
-        <span>Contacto de emergencia</span>
-        <input
-          class="input"
-          type="text"
-          formControlName="emergency_contact"
-          placeholder="Nombre y teléfono"
-        />
-      </label>
-
-      <button class="btn btn-primary" type="submit" [disabled]="saving">
-        {{ saving ? 'Guardando cambios…' : 'Guardar cambios' }}
-      </button>
-    </form>
+    <button class="btn btn-primary" type="submit" [disabled]="saving">
+      {{ saving ? 'Guardando cambios…' : 'Guardar cambios' }}
+    </button>
+  </form>
   }
 </section>

@@ -96,7 +96,7 @@ def fix_sample_accounts():
                         new_admin = Admin(
                             id=admin_user.id,
                             office_id=office.id,
-                            role="System Administrator",
+                            role="superadmin",
                             permissions=["user_management", "office_management", "system_settings"]
                         )
                         session.add(new_admin)

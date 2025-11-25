@@ -208,16 +208,22 @@ readonly formError = signal<string | null>(null);
 
     const { date, start, end } = this.form.getRawValue();
     
-    // Create proper datetime by combining date with time
-    const selectedDate = new Date(date);
-    const [startHours, startMinutes] = start.split(':');
-    const [endHours, endMinutes] = end.split(':');
+    // Fix timezone handling: Build ISO datetime strings with explicit timezone offset
+    // for Buenos Aires (GMT-3) to prevent date shifts when converting to UTC.
+    // 
+    // BEFORE (buggy): new Date('2025-12-05') creates midnight local time, then setHours()
+    //                 sets hours in local timezone. toISOString() converts to UTC, which
+    //                 can shift the date (e.g., Dec 5 21:00 GMT-3 → Dec 6 00:00 UTC).
+    // 
+    // AFTER (fixed):  Build ISO string with explicit timezone offset. JS Date parser
+    //                 correctly handles timezone conversion without shifting the date
+    //                 as long as we're within the same calendar day boundaries.
+    const buenosAiresOffset = '-03:00';
+    const startISOLocal = `${date}T${start}:00${buenosAiresOffset}`;
+    const endISOLocal = `${date}T${end}:00${buenosAiresOffset}`;
     
-    const startDate = new Date(selectedDate);
-    startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
-    
-    const endDate = new Date(selectedDate);
-    endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+    const startDate = new Date(startISOLocal);
+    const endDate = new Date(endISOLocal);
 
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       this.toastService.error('Ingresá fechas válidas.');

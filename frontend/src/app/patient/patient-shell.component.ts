@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AuthService } from '../core/services/auth.service';
@@ -13,6 +13,7 @@ import { PatientAppointmentsComponent } from './components/patient-appointments/
 import { PatientBookingComponent } from './components/patient-booking/patient-booking.component';
 import { PatientMedicalRecordsComponent } from './components/patient-medical-records/patient-medical-records.component';
 import { TabbedShellComponent, TabConfig } from '../shared/components/tabbed-shell/tabbed-shell.component';
+import { ToastService } from '../shared/services/toast.service';
 
 @Component({
   selector: 'app-patient-shell',
@@ -33,7 +34,10 @@ export class PatientShellComponent {
   private readonly patientsService = inject(PatientsService);
   private readonly appointmentsService = inject(AppointmentsService);
   private readonly medicalRecordsService = inject(MedicalRecordsService);
+  private readonly toastService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+
+  @ViewChild(PatientBookingComponent) bookingComponent?: PatientBookingComponent;
 
   readonly profile = signal<PatientDto | null>(null);
   readonly appointments = signal<AppointmentDto[]>([]);
@@ -115,15 +119,15 @@ export class PatientShellComponent {
       .updatePatient(currentUser.id, changes)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: (patient) => {
-        this.profile.set(patient);
-        this.isSavingProfile.set(false);
-      },
-      error: () => {
-        this.isSavingProfile.set(false);
-        this.errorMessage.set('No pudimos guardar los cambios. Intentá más tarde.');
-      }
-    });
+        next: (patient) => {
+          this.profile.set(patient);
+          this.isSavingProfile.set(false);
+        },
+        error: () => {
+          this.isSavingProfile.set(false);
+          this.errorMessage.set('No pudimos guardar los cambios. Intentá más tarde.');
+        }
+      });
   }
 
   onCancelAppointment(appointmentId: number): void {
@@ -147,6 +151,17 @@ export class PatientShellComponent {
           list.map((item) => (item.id === updated.id ? updated : item))
         );
         this.appointmentActionId.set(null);
+
+        // Show success message and refresh blocks after cancellation
+        if (action === 'cancel') {
+          this.toastService.success('Turno cancelado correctamente. El horario quedó disponible para otros pacientes.');
+          // Refresh available blocks in booking component
+          setTimeout(() => {
+            this.bookingComponent?.refreshAvailableBlocks();
+          }, 500);
+        } else {
+          this.toastService.success('Turno confirmado correctamente.');
+        }
       },
       error: () => {
         this.appointmentActionId.set(null);
@@ -167,15 +182,15 @@ export class PatientShellComponent {
       .getPatient(currentUser.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: (patient) => {
-        this.profile.set(patient);
-        this.isLoadingProfile.set(false);
-      },
-      error: () => {
-        this.isLoadingProfile.set(false);
-        this.errorMessage.set('No pudimos cargar tu perfil. Intentá nuevamente.');
-      }
-    });
+        next: (patient) => {
+          this.profile.set(patient);
+          this.isLoadingProfile.set(false);
+        },
+        error: () => {
+          this.isLoadingProfile.set(false);
+          this.errorMessage.set('No pudimos cargar tu perfil. Intentá nuevamente.');
+        }
+      });
   }
 
   private loadAppointments(): void {
@@ -188,15 +203,15 @@ export class PatientShellComponent {
       .listForPatient(currentUser.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: (items) => {
-        this.appointments.set(items);
-        this.isLoadingAppointments.set(false);
-      },
-      error: () => {
-        this.isLoadingAppointments.set(false);
-        this.errorMessage.set('No pudimos obtener tus turnos.');
-      }
-    });
+        next: (items) => {
+          this.appointments.set(items);
+          this.isLoadingAppointments.set(false);
+        },
+        error: () => {
+          this.isLoadingAppointments.set(false);
+          this.errorMessage.set('No pudimos obtener tus turnos.');
+        }
+      });
   }
 
   private loadMedicalRecords(force = false): void {

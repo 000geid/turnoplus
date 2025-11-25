@@ -24,8 +24,23 @@ export class PatientProfileComponent implements OnChanges {
     full_name: [''],
     email: ['', [Validators.required, Validators.email]],
     medical_record_number: [''],
-    emergency_contact: ['']
+    emergency_contact: [''],
+    obra_social_name: [''],
+    obra_social_number: ['']
   });
+
+  readonly obraSocialProviders = [
+    'OSDE',
+    'Swiss Medical',
+    'Galeno',
+    'Hospital Italiano',
+    'IOMA',
+    'PAMI',
+    'OMINT',
+    'Sancor Salud',
+    'Medifé',
+    'Accord Salud'
+  ];
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['patient'] && this.patient) {
@@ -34,7 +49,9 @@ export class PatientProfileComponent implements OnChanges {
           full_name: this.patient.full_name ?? '',
           email: this.patient.email ?? '',
           medical_record_number: this.patient.medical_record_number ?? '',
-          emergency_contact: this.patient.emergency_contact ?? ''
+          emergency_contact: this.patient.emergency_contact ?? '',
+          obra_social_name: this.patient.obra_social_name ?? '',
+          obra_social_number: this.patient.obra_social_number ?? ''
         },
         { emitEvent: false }
       );
@@ -51,7 +68,9 @@ export class PatientProfileComponent implements OnChanges {
       full_name: raw.full_name ?? null,
       email: raw.email ?? null,
       medical_record_number: raw.medical_record_number ?? null,
-      emergency_contact: raw.emergency_contact ?? null
+      emergency_contact: raw.emergency_contact ?? null,
+      obra_social_name: raw.obra_social_name ?? null,
+      obra_social_number: raw.obra_social_number ?? null
     });
   }
 }

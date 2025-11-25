@@ -46,3 +46,91 @@ def test_create_patient_duplicate_email_rejected(db_session):
 
     with pytest.raises(ValueError, match="Email already in use"):
         service.create(PatientCreate(**duplicate_payload))
+
+
+def test_create_patient_with_obra_social(db_session):
+    service = PatientsService(db_session)
+    patient = service.create(
+        PatientCreate(
+            email="osde_patient@example.com",
+            password="secret123",
+            full_name="Paciente OSDE",
+            document_type="dni",
+            document_number="22334455",
+            address="Calle 3 789",
+            phone="555-0003",
+            obra_social_name="OSDE",
+            obra_social_number="1234567890",
+        )
+    )
+
+    assert patient.obra_social_name == "OSDE"
+    assert patient.obra_social_number == "1234567890"
+
+
+def test_create_patient_without_obra_social(db_session):
+    service = PatientsService(db_session)
+    patient = service.create(
+        PatientCreate(
+            email="no_os_patient@example.com",
+            password="secret123",
+            full_name="Paciente Sin OS",
+            document_type="dni",
+            document_number="33445566",
+            address="Calle 4 012",
+            phone="555-0004",
+        )
+    )
+
+    assert patient.obra_social_name is None
+    assert patient.obra_social_number is None
+
+
+def test_update_patient_obra_social(db_session):
+    service = PatientsService(db_session)
+    # Create patient without OS
+    patient = service.create(
+        PatientCreate(
+            email="update_os_patient@example.com",
+            password="secret123",
+            full_name="Paciente Update",
+            document_type="dni",
+            document_number="44556677",
+            address="Calle 5 345",
+            phone="555-0005",
+        )
+    )
+    
+    # Update with OS
+    from app.schemas.user import PatientUpdate
+    updated = service.update(
+        patient.id,
+        PatientUpdate(
+            obra_social_name="Swiss Medical",
+            obra_social_number="SM-98765"
+        )
+    )
+    
+    assert updated.obra_social_name == "Swiss Medical"
+    assert updated.obra_social_number == "SM-98765"
+
+
+def test_obra_social_special_characters(db_session):
+    service = PatientsService(db_session)
+    patient = service.create(
+        PatientCreate(
+            email="special_chars@example.com",
+            password="secret123",
+            full_name="Paciente Special",
+            document_type="dni",
+            document_number="55667788",
+            address="Calle 6 678",
+            phone="555-0006",
+            obra_social_name="O.S.D.E. - Plan 210",
+            obra_social_number="A-123/456",
+        )
+    )
+
+    assert patient.obra_social_name == "O.S.D.E. - Plan 210"
+    assert patient.obra_social_number == "A-123/456"
+

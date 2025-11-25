@@ -95,3 +95,65 @@ def client(app):
 def unique_suffix() -> str:
     """Timestamp-based suffix to avoid clashing emails in shared databases."""
     return datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+
+
+@pytest.fixture()
+def sample_doctor(db_session, unique_suffix):
+    """Create a sample doctor for testing."""
+    from app.services.doctors import DoctorsService
+    from app.schemas.user import DoctorCreate
+    
+    service = DoctorsService(db_session)
+    return service.create(
+        DoctorCreate(
+            email=f"doctor.{unique_suffix}@example.com",
+            password="doctorpass",
+            full_name="Dr. Test Buenos Aires",
+            specialty="Clínica Médica",
+            license_number=f"LIC-{unique_suffix[-6:]}",
+            years_experience=5,
+        )
+    )
+
+
+@pytest.fixture()
+def sample_patient(db_session, unique_suffix):
+    """Create a sample patient for testing."""
+    from app.services.patients import PatientsService
+    from app.schemas.user import PatientCreate
+    
+    service = PatientsService(db_session)
+    return service.create(
+        PatientCreate(
+            email=f"patient.{unique_suffix}@example.com",
+            password="patientpass",
+            full_name="Patient Test",
+            document_type="dni",
+            document_number=f"DN{unique_suffix[-6:]}",
+            address="Test address 123",
+            phone="555-1234",
+            medical_record_number=f"MRN-{unique_suffix[-6:]}",
+        )
+    )
+
+
+@pytest.fixture()
+def another_patient(db_session, unique_suffix):
+    """Create another sample patient for testing rebooking scenarios."""
+    from app.services.patients import PatientsService
+    from app.schemas.user import PatientCreate
+    
+    service = PatientsService(db_session)
+    return service.create(
+        PatientCreate(
+            email=f"patient2.{unique_suffix}@example.com",
+            password="patientpass",
+            full_name="Another Patient Test",
+            document_type="dni",
+            document_number=f"DN2{unique_suffix[-6:]}",
+            address="Test address 456",
+            phone="555-5678",
+            medical_record_number=f"MRN2-{unique_suffix[-6:]}",
+        )
+    )
+
