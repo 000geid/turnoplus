@@ -159,6 +159,18 @@ def delete_unbooked_blocks(availability_id: int) -> Optional[Availability]:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+def delete_appointment_block(block_id: int) -> bool:
+    broker = get_dbbroker()
+    with broker.session() as session:
+        svc = AppointmentsService(session)
+        try:
+            return svc.delete_block(block_id)
+        except NotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 def get_doctor_availability(doctor_id: int) -> list[Availability]:
     """Get doctor's availability with blocks."""
     broker = get_dbbroker()

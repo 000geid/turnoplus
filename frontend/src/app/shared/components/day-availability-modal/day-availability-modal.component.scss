@@ -582,3 +582,67 @@
     border-radius: 0;
   }
 }
+
+// Blocks Editor
+.blocks-editor {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  border: 1px solid #e9ecef;
+
+  h5 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 600;
+  }
+}
+
+.blocks-list-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.block-editor-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+
+  &.booked {
+    background-color: #e9ecef;
+    color: #6c757d;
+  }
+
+  .block-time {
+    font-family: monospace;
+  }
+}
+
+.btn-icon-danger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #fee2e2;
+  }
+}
+
+.badge-booked {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  background-color: #e9ecef;
+  color: #495057;
+  border-radius: 1rem;
+  border: 1px solid #ced4da;
+}

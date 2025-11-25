@@ -25,7 +25,7 @@ export interface DayAvailabilityModalData {
 }
 
 export interface DayAvailabilityModalCloseEvent {
-  type: 'close' | 'appointmentBooked' | 'availabilityConfigured' | 'availabilityDeleted';
+  type: 'close' | 'appointmentBooked' | 'availabilityConfigured' | 'availabilityDeleted' | 'blockDeleted';
   data?: any;
 }
 
@@ -40,6 +40,7 @@ export interface AppointmentSlot {
   totalBlocks?: number;
   availableBlocks?: number;
   isPastSlot?: boolean;
+  blocks?: AppointmentBlockDto[];
   [key: string]: any; // Allow additional properties for flexibility
 }
 
@@ -61,10 +62,10 @@ export class DayAvailabilityModalComponent {
 
   readonly isPatientMode = computed(() => this.data.mode === 'patient');
   readonly isDoctorMode = computed(() => this.data.mode === 'doctor');
-  
+
   // Patient mode state
   readonly isBooking = signal<boolean>(false);
-  
+
   // Doctor mode state
   readonly isDeleting = signal<boolean>(false);
   readonly selectedSlotForDelete = signal<AvailabilityDto | null>(null);
@@ -88,7 +89,7 @@ export class DayAvailabilityModalComponent {
   });
 
   // Process availability data based on mode
-  readonly processedSlots = computed(() => {
+  readonly processedSlots = computed<AppointmentSlot[]>(() => {
     if (this.isPatientMode()) {
       // For patient mode, we expect AppointmentBlockDto[]
       const blocks = this.data.availabilityData as AppointmentBlockDto[];
@@ -105,7 +106,8 @@ export class DayAvailabilityModalComponent {
           isBooked: block.isBooked || false,
           isAvailable: !block.isBooked,
           doctorId: this.data.doctorInfo?.id,
-          doctorName: this.data.doctorInfo?.full_name || this.data.doctorInfo?.email
+          doctorName: this.data.doctorInfo?.full_name || this.data.doctorInfo?.email,
+          blocks: [] // Empty blocks for patient mode
         }))
         .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
     } else {
@@ -116,11 +118,11 @@ export class DayAvailabilityModalComponent {
           // Fix date comparison to handle timezone properly
           const availDate = new Date(avail.startAt);
           const selectedDate = new Date(this.data.date);
-          
+
           // Compare dates without time to ensure proper matching
           const availDateOnly = new Date(availDate.getFullYear(), availDate.getMonth(), availDate.getDate());
           const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-          
+
           return availDateOnly.getTime() === selectedDateOnly.getTime();
         })
         .map(avail => {
@@ -128,7 +130,7 @@ export class DayAvailabilityModalComponent {
           const blocks = avail.blocks || [];
           const availableBlocks = blocks.filter(block => !block.isBooked);
           const isPastSlot = new Date(avail.startAt) < new Date();
-          
+
           return {
             id: avail.id,
             startAt: avail.startAt,
@@ -147,20 +149,20 @@ export class DayAvailabilityModalComponent {
 
   readonly hasSlots = computed(() => this.processedSlots().length > 0);
 
-readonly totalSlots = computed(() => this.processedSlots().length);
-readonly availableSlots = computed(() =>
-  this.processedSlots().filter(slot =>
-    this.isPatientMode() ? slot.isAvailable : slot.isAvailable && !this.getSlotIsPastSlot(slot)
-  ).length
-);
+  readonly totalSlots = computed(() => this.processedSlots().length);
+  readonly availableSlots = computed(() =>
+    this.processedSlots().filter(slot =>
+      this.isPatientMode() ? slot.isAvailable : slot.isAvailable && !this.getSlotIsPastSlot(slot)
+    ).length
+  );
 
-readonly totalAvailableBlocks = computed(() => {
-  if (this.isPatientMode()) {
-    return 0; // Not used in patient mode
-  } else {
-    return this.processedSlots().reduce((sum, slot) => sum + this.getSlotAvailableBlocks(slot), 0);
-  }
-});
+  readonly totalAvailableBlocks = computed(() => {
+    if (this.isPatientMode()) {
+      return 0; // Not used in patient mode
+    } else {
+      return this.processedSlots().reduce((sum, slot) => sum + this.getSlotAvailableBlocks(slot), 0);
+    }
+  });
 
   // Helper methods
   formatTimeSpanish(dateString: string): string {
@@ -238,7 +240,7 @@ readonly totalAvailableBlocks = computed(() => {
     });
   }
 
-onDeleteSlot(slot: AppointmentSlot): void {
+  onDeleteSlot(slot: AppointmentSlot): void {
     if (!slot.id || this.isDeleting()) {
       return;
     }
@@ -263,7 +265,7 @@ onDeleteSlot(slot: AppointmentSlot): void {
     }
 
     this.isDeleting.set(true);
-    
+
     // This would need to be implemented in the parent component
     // For now, we'll emit the event to be handled by the parent
     this.modalClose.emit({
@@ -279,20 +281,53 @@ onDeleteSlot(slot: AppointmentSlot): void {
     this.selectedSlotForDelete.set(null);
   }
 
+  // Block deletion logic
+  readonly editingSlotId = signal<number | null>(null);
+
+  toggleEditSlot(slot: AppointmentSlot): void {
+    if (this.editingSlotId() === slot.id) {
+      this.editingSlotId.set(null);
+    } else {
+      this.editingSlotId.set(slot.id || null);
+    }
+  }
+
+  isEditingSlot(slot: AppointmentSlot): boolean {
+    return this.editingSlotId() === slot.id;
+  }
+
+  onDeleteBlock(blockId: number): void {
+    if (confirm('¿Estás seguro de eliminar este bloque horario?')) {
+      this.appointmentsService.deleteBlock(blockId).subscribe({
+        next: () => {
+          this.toastService.success('Bloque eliminado correctamente');
+          // Emit event to refresh availability
+          this.modalClose.emit({
+            type: 'blockDeleted',
+            data: { id: blockId }
+          });
+        },
+        error: () => {
+          this.toastService.error('Error al eliminar el bloque');
+        }
+      });
+    }
+  }
+
   // Modal methods
   onClose(): void {
     this.modalClose.emit({ type: 'close' });
   }
 
   // Keyboard accessibility
-    onKeydown(event: KeyboardEvent): void {
-      if (event.key === 'Escape') {
-        this.onClose();
-      }
-    }
-  
-    // Helper method for template range generation
-    getRangeArray(count: number): number[] {
-      return Array.from({ length: count }, (_, i) => i);
+  onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.onClose();
     }
   }
+
+  // Helper method for template range generation
+  getRangeArray(count: number): number[] {
+    return Array.from({ length: count }, (_, i) => i);
+  }
+}

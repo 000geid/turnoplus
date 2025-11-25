@@ -32,7 +32,7 @@ export class AppointmentsService {
     if (endDate) {
       params = params.set('end_date', endDate);
     }
-    
+
     return this.http.get<AppointmentDto[]>(
       `${API_BASE_URL}/appointments/patients/${patientId}/filtered`,
       { params }
@@ -75,6 +75,10 @@ export class AppointmentsService {
     );
   }
 
+  deleteBlock(blockId: number): Observable<void> {
+    return this.http.delete<void>(`${API_BASE_URL}/appointments/blocks/${blockId}`);
+  }
+
   book(payload: AppointmentCreateRequest): Observable<AppointmentDto> {
     return this.http.post<AppointmentDto>(`${API_BASE_URL}/appointments`, payload);
   }
@@ -83,8 +87,8 @@ export class AppointmentsService {
    * Get available appointment blocks for a doctor within a date range
    */
   getAvailableBlocks(
-    doctorId: number, 
-    startDate: string, 
+    doctorId: number,
+    startDate: string,
     endDate: string
   ): Observable<AppointmentBlockDto[]> {
     return this.http.get<AppointmentBlockDto[]>(

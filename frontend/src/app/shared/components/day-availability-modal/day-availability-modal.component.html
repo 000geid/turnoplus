@@ -5,13 +5,8 @@
       <h2 class="modal-title" id="modal-title">
         {{ modalTitle() }} - {{ formattedDate() }}
       </h2>
-      <button 
-        type="button" 
-        class="modal-close" 
-        (click)="onClose()" 
-        aria-label="Cerrar modal"
-        [disabled]="isBooking() || isDeleting()"
-      >
+      <button type="button" class="modal-close" (click)="onClose()" aria-label="Cerrar modal"
+        [disabled]="isBooking() || isDeleting()">
         ×
       </button>
     </div>
@@ -19,192 +14,193 @@
     <!-- Modal Content -->
     <div class="modal-content">
       @if (isPatientMode()) {
-        <!-- Patient Booking Mode -->
-        <div class="patient-mode">
-          @if (hasSlots()) {
-            <div class="slots-summary">
-              <div class="summary-item">
-                <span class="summary-number">{{ totalSlots() }}</span>
-                <span class="summary-label">turnos totales</span>
-              </div>
-              <div class="summary-item available">
-                <span class="summary-number">{{ availableSlots() }}</span>
-                <span class="summary-label">disponibles</span>
-              </div>
-            </div>
+      <!-- Patient Booking Mode -->
+      <div class="patient-mode">
+        @if (hasSlots()) {
+        <div class="slots-summary">
+          <div class="summary-item">
+            <span class="summary-number">{{ totalSlots() }}</span>
+            <span class="summary-label">turnos totales</span>
+          </div>
+          <div class="summary-item available">
+            <span class="summary-number">{{ availableSlots() }}</span>
+            <span class="summary-label">disponibles</span>
+          </div>
+        </div>
 
-            <div class="slots-list">
-              @for (slot of processedSlots(); track slot.id) {
-                <div 
-                  class="appointment-slot"
-                  [class.past]="isSlotInPast(slot)"
-                  [class.booked]="slot.isBooked"
-                  [class.available]="slot.isAvailable && !isSlotInPast(slot)"
-                  [class.clickable]="slot.isAvailable && !isSlotInPast(slot)"
-                  (click)="slot.isAvailable && !isSlotInPast(slot) && onAppointmentBooked(slot)"
-                >
-                  <div class="slot-time">
-                    {{ formatTimeSpanish(slot.startAt) }} - {{ formatTimeSpanish(slot.endAt) }}
-                  </div>
-                  <div class="slot-status">
-                    @if (isSlotInPast(slot)) {
-                      <span class="status-past">🕐 Pasado</span>
-                    } @else if (slot.isBooked) {
-                      <span class="status-booked">📅 Reservado</span>
-                    } @else {
-                      <span class="status-available">✅ Disponible</span>
-                    }
-                  </div>
-                  <div class="slot-actions">
-                    @if (!isSlotInPast(slot) && slot.isAvailable) {
-                      @if (isBooking()) {
-                        <span class="booking-indicator">Reservando...</span>
-                      } @else {
-                        <button type="button" class="btn btn-primary btn-sm">
-                          Reservar
-                        </button>
-                      }
-                    }
-                  </div>
-                </div>
+        <div class="slots-list">
+          @for (slot of processedSlots(); track slot.id) {
+          <div class="appointment-slot" [class.past]="isSlotInPast(slot)" [class.booked]="slot.isBooked"
+            [class.available]="slot.isAvailable && !isSlotInPast(slot)"
+            [class.clickable]="slot.isAvailable && !isSlotInPast(slot)"
+            (click)="slot.isAvailable && !isSlotInPast(slot) && onAppointmentBooked(slot)">
+            <div class="slot-time">
+              {{ formatTimeSpanish(slot.startAt) }} - {{ formatTimeSpanish(slot.endAt) }}
+            </div>
+            <div class="slot-status">
+              @if (isSlotInPast(slot)) {
+              <span class="status-past">🕐 Pasado</span>
+              } @else if (slot.isBooked) {
+              <span class="status-booked">📅 Reservado</span>
+              } @else {
+              <span class="status-available">✅ Disponible</span>
               }
             </div>
-          } @else {
-            <div class="empty-state">
-              <div class="empty-icon">📅</div>
-              <h4>No hay turnos disponibles</h4>
-              <p>No se encontraron turnos disponibles para esta fecha.</p>
-              @if (data.doctorInfo) {
-                <p class="doctor-info">
-                  Profesional: {{ data.doctorInfo.full_name || data.doctorInfo.email }}
-                  @if (data.doctorInfo.specialty) {
-                    - {{ data.doctorInfo.specialty }}
-                  }
-                </p>
+            <div class="slot-actions">
+              @if (!isSlotInPast(slot) && slot.isAvailable) {
+              @if (isBooking()) {
+              <span class="booking-indicator">Reservando...</span>
+              } @else {
+              <button type="button" class="btn btn-primary btn-sm">
+                Reservar
+              </button>
+              }
               }
             </div>
+          </div>
           }
         </div>
+        } @else {
+        <div class="empty-state">
+          <div class="empty-icon">📅</div>
+          <h4>No hay turnos disponibles</h4>
+          <p>No se encontraron turnos disponibles para esta fecha.</p>
+          @if (data.doctorInfo) {
+          <p class="doctor-info">
+            Profesional: {{ data.doctorInfo.full_name || data.doctorInfo.email }}
+            @if (data.doctorInfo.specialty) {
+            - {{ data.doctorInfo.specialty }}
+            }
+          </p>
+          }
+        </div>
+        }
+      </div>
       } @else if (isDoctorMode()) {
-        <!-- Doctor Availability Mode -->
-        <div class="doctor-mode">
-          @if (hasSlots()) {
-            <div class="slots-summary">
-              <div class="summary-item">
-                <span class="summary-number">{{ totalSlots() }}</span>
-                <span class="summary-label">bloques configurados</span>
+      <!-- Doctor Availability Mode -->
+      <div class="doctor-mode">
+        @if (hasSlots()) {
+        <div class="slots-summary">
+          <div class="summary-item">
+            <span class="summary-number">{{ totalSlots() }}</span>
+            <span class="summary-label">bloques configurados</span>
+          </div>
+          <div class="summary-item available">
+            <span class="summary-number">
+              {{ totalAvailableBlocks() }}
+            </span>
+            <span class="summary-label">turnos disponibles</span>
+          </div>
+        </div>
+
+        <div class="slots-list">
+          @for (slot of processedSlots(); track slot.id) {
+          <div class="availability-slot" [class.past]="getSlotIsPastSlot(slot)"
+            [class.has-availability]="getSlotTotalBlocks(slot) > 0">
+            <div class="slot-header">
+              <div class="slot-time">
+                {{ formatTimeSpanish(slot.startAt) }} - {{ formatTimeSpanish(slot.endAt) }}
               </div>
-              <div class="summary-item available">
-                <span class="summary-number">
-                  {{ totalAvailableBlocks() }}
-                </span>
-                <span class="summary-label">turnos disponibles</span>
+              <div class="slot-summary">
+                {{ getSlotAvailableBlocks(slot) }}/{{ getSlotTotalBlocks(slot) }} disponibles
               </div>
             </div>
 
-            <div class="slots-list">
-              @for (slot of processedSlots(); track slot.id) {
-                <div
-                  class="availability-slot"
-                  [class.past]="getSlotIsPastSlot(slot)"
-                  [class.has-availability]="getSlotTotalBlocks(slot) > 0"
-                >
-                  <div class="slot-header">
-                    <div class="slot-time">
-                      {{ formatTimeSpanish(slot.startAt) }} - {{ formatTimeSpanish(slot.endAt) }}
-                    </div>
-                    <div class="slot-summary">
-                      {{ getSlotAvailableBlocks(slot) }}/{{ getSlotTotalBlocks(slot) }} disponibles
-                    </div>
-                  </div>
-
-                  @if (getSlotTotalBlocks(slot) > 0) {
-                    <div class="blocks-preview">
-                      @for (blockIndex of getRangeArray(getSlotTotalBlocks(slot)); track blockIndex; let i = $index) {
-                        <div class="block-indicator"
-                             [class.booked]="i >= getSlotAvailableBlocks(slot)"
-                             [class.available]="i < getSlotAvailableBlocks(slot)">
-                        </div>
-                      }
-                    </div>
-                  }
-
-                  <div class="slot-actions">
-                    @if (getSlotIsPastSlot(slot)) {
-                      <span class="status-past">🕐 Pasado</span>
-                    } @else {
-                      <button
-                        type="button"
-                        class="btn btn-outline btn-sm"
-                        (click)="onDeleteSlot(slot)"
-                      >
-                        Eliminar
-                      </button>
-                    }
-                  </div>
-                </div>
+            @if (getSlotTotalBlocks(slot) > 0) {
+            <div class="blocks-preview">
+              @for (blockIndex of getRangeArray(getSlotTotalBlocks(slot)); track blockIndex; let i = $index) {
+              <div class="block-indicator" [class.booked]="i >= getSlotAvailableBlocks(slot)"
+                [class.available]="i < getSlotAvailableBlocks(slot)">
+              </div>
               }
             </div>
+            }
 
-            <div class="modal-actions">
-              <button 
-                type="button" 
-                class="btn btn-primary"
-                (click)="onConfigureAvailability()"
-              >
-                Agregar disponibilidad
+            <div class="slot-actions">
+              @if (getSlotIsPastSlot(slot)) {
+              <span class="status-past">🕐 Pasado</span>
+              } @else {
+              <button type="button" class="btn btn-outline btn-sm" (click)="toggleEditSlot(slot)">
+                {{ isEditingSlot(slot) ? 'Listo' : 'Editar' }}
               </button>
-            </div>
-          } @else {
-            <div class="empty-state">
-              <div class="empty-icon">📅</div>
-              <h4>Sin disponibilidad configurada</h4>
-              <p>No se ha configurado disponibilidad para esta fecha.</p>
-              <button 
-                type="button" 
-                class="btn btn-primary"
-                (click)="onConfigureAvailability()"
-              >
-                Configurar disponibilidad
+              <button type="button" class="btn btn-outline btn-sm" (click)="onDeleteSlot(slot)"
+                *ngIf="!isEditingSlot(slot)">
+                Eliminar todo
               </button>
+              }
             </div>
+          </div>
+
+          <!-- Edit Mode: Show Blocks -->
+          @if (isEditingSlot(slot)) {
+          <div class="blocks-editor">
+            <h5>Bloques individuales</h5>
+            <div class="blocks-list-editor">
+              @for (block of slot.blocks; track block.id) {
+              <div class="block-editor-item" [class.booked]="block.isBooked">
+                <span class="block-time">
+                  {{ formatTimeSpanish(block.startAt) }} - {{ formatTimeSpanish(block.endAt) }}
+                </span>
+                <div class="block-actions">
+                  @if (block.isBooked) {
+                  <span class="badge-booked">Reservado</span>
+                  } @else {
+                  <button type="button" class="btn-icon-danger" (click)="onDeleteBlock(block.id)"
+                    title="Eliminar bloque">
+                    🗑️
+                  </button>
+                  }
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+          }
           }
         </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-primary" (click)="onConfigureAvailability()">
+            Agregar disponibilidad
+          </button>
+        </div>
+        } @else {
+        <div class="empty-state">
+          <div class="empty-icon">📅</div>
+          <h4>Sin disponibilidad configurada</h4>
+          <p>No se ha configurado disponibilidad para esta fecha.</p>
+          <button type="button" class="btn btn-primary" (click)="onConfigureAvailability()">
+            Configurar disponibilidad
+          </button>
+        </div>
+        }
+      </div>
       }
     </div>
 
     <!-- Delete Confirmation Dialog -->
     @if (selectedSlotForDelete()) {
-      <div class="delete-confirmation">
-        <div class="confirmation-content">
-          <h4>¿Eliminar turnos libres?</h4>
-          <p>
-            ¿Estás seguro que querés eliminar los turnos que no están reservados?
-            <br>
-            <strong>{{ formatTimeSpanish(selectedSlotForDelete()!.startAt) }} - {{ formatTimeSpanish(selectedSlotForDelete()!.endAt) }}</strong>
-            <br>
-            Las reservas confirmadas se conservan.
-          </p>
-          <div class="confirmation-actions">
-            <button 
-              type="button" 
-              class="btn btn-danger"
-              [disabled]="isDeleting()"
-              (click)="confirmDeleteSlot()"
-            >
-              {{ isDeleting() ? 'Eliminando...' : 'Eliminar' }}
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-secondary"
-              [disabled]="isDeleting()"
-              (click)="cancelDeleteSlot()"
-            >
-              Cancelar
-            </button>
-          </div>
+    <div class="delete-confirmation">
+      <div class="confirmation-content">
+        <h4>¿Eliminar turnos libres?</h4>
+        <p>
+          ¿Estás seguro que querés eliminar los turnos que no están reservados?
+          <br>
+          <strong>{{ formatTimeSpanish(selectedSlotForDelete()!.startAt) }} - {{
+            formatTimeSpanish(selectedSlotForDelete()!.endAt) }}</strong>
+          <br>
+          Las reservas confirmadas se conservan.
+        </p>
+        <div class="confirmation-actions">
+          <button type="button" class="btn btn-danger" [disabled]="isDeleting()" (click)="confirmDeleteSlot()">
+            {{ isDeleting() ? 'Eliminando...' : 'Eliminar' }}
+          </button>
+          <button type="button" class="btn btn-secondary" [disabled]="isDeleting()" (click)="cancelDeleteSlot()">
+            Cancelar
+          </button>
         </div>
       </div>
+    </div>
     }
   </div>
 </div>
