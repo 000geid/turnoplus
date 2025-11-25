@@ -72,9 +72,9 @@ export class DoctorAvailabilityComponent {
   private readonly fb = inject(FormBuilder);
   private readonly toastService = inject(ToastService);
 
-readonly formError = signal<string | null>(null);
+  readonly formError = signal<string | null>(null);
   readonly viewMode = signal<'list' | 'calendar'>('calendar');
-  
+
   // Modal state management
   readonly modalData = signal<DayAvailabilityModalData | null>(null);
   readonly isDeleting = signal<boolean>(false);
@@ -118,46 +118,46 @@ readonly formError = signal<string | null>(null);
   ];
 
   readonly hasAvailability = computed(() => this.availability.length > 0);
-  
+
   readonly currentSelectionConflict = computed(() => {
     const formValue = this.form.getRawValue();
     if (!formValue.date || !formValue.start || !formValue.end) {
       return null;
     }
-    
+
     try {
       const selectedDate = new Date(formValue.date);
       const [startHours, startMinutes] = formValue.start.split(':');
       const [endHours, endMinutes] = formValue.end.split(':');
-      
+
       const startDate = new Date(selectedDate);
       startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
-      
+
       const endDate = new Date(selectedDate);
       endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
-      
+
       if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
         return null;
       }
-      
+
       return this.checkForOverlap(startDate, endDate);
     } catch {
       return null;
     }
   });
-  
+
   readonly totalBlocks = computed(() => {
     return this.availability.reduce((total, avail) => total + avail.blocks.length, 0);
   });
-  
+
   readonly availableBlocks = computed(() => {
-    return this.availability.reduce((total, avail) => 
+    return this.availability.reduce((total, avail) =>
       total + avail.blocks.filter(block => !block.isBooked).length, 0
     );
   });
-  
+
   readonly bookedBlocks = computed(() => {
-    return this.availability.reduce((total, avail) => 
+    return this.availability.reduce((total, avail) =>
       total + avail.blocks.filter(block => block.isBooked).length, 0
     );
   });
@@ -187,7 +187,7 @@ readonly formError = signal<string | null>(null);
             end: ''
           });
         }
-        
+
         // Clear any existing form errors when template changes
         this.formError.set(null);
       }
@@ -207,7 +207,7 @@ readonly formError = signal<string | null>(null);
     }
 
     const { date, start, end } = this.form.getRawValue();
-    
+
     // Fix timezone handling: Build ISO datetime strings with explicit timezone offset
     // for Buenos Aires (GMT-3) to prevent date shifts when converting to UTC.
     // 
@@ -221,7 +221,7 @@ readonly formError = signal<string | null>(null);
     const buenosAiresOffset = '-03:00';
     const startISOLocal = `${date}T${start}:00${buenosAiresOffset}`;
     const endISOLocal = `${date}T${end}:00${buenosAiresOffset}`;
-    
+
     const startDate = new Date(startISOLocal);
     const endDate = new Date(endISOLocal);
 
@@ -285,7 +285,7 @@ readonly formError = signal<string | null>(null);
     return this.availability.some(slot => {
       const slotStart = new Date(slot.startAt);
       const slotEnd = new Date(slot.endAt);
-      
+
       // Check if the new availability overlaps with existing one
       return startDate < slotEnd && endDate > slotStart;
     });
@@ -322,7 +322,7 @@ readonly formError = signal<string | null>(null);
     this.viewMode.set(mode);
   }
 
-onDaySelected(date: Date): void {
+  onDaySelected(date: Date): void {
     // Open modal with day availability
     const modalData: DayAvailabilityModalData = {
       date: date,
@@ -339,7 +339,7 @@ onDaySelected(date: Date): void {
     this.form.patchValue({
       date: dateString
     });
-    
+
     // Scroll to form for better UX
     const formElement = document.querySelector('.doctor-availability__form');
     if (formElement) {
@@ -347,7 +347,7 @@ onDaySelected(date: Date): void {
     }
   }
 
-onAvailabilitySelected(availability: AvailabilityDto): void {
+  onAvailabilitySelected(availability: AvailabilityDto): void {
     // Handle availability selection if needed
     console.log('Availability selected:', availability);
   }
@@ -366,7 +366,7 @@ onAvailabilitySelected(availability: AvailabilityDto): void {
           this.form.patchValue({
             date: dateString
           });
-          
+
           // Scroll to form for better UX
           const formElement = document.querySelector('.doctor-availability__form');
           if (formElement) {
@@ -386,6 +386,10 @@ onAvailabilitySelected(availability: AvailabilityDto): void {
           // This would need to be integrated with the existing deletion logic
         }
         break;
+      case 'blockDeleted':
+        // Block already deleted in modal, just refresh
+        this.refresh.emit();
+        break;
       case 'close':
         // Modal was closed, no action needed
         break;
@@ -395,7 +399,7 @@ onAvailabilitySelected(availability: AvailabilityDto): void {
   private initializeDefaultRange(): void {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
-    
+
     // Set default to next full hour (9:00 AM)
     const startTime = new Date();
     startTime.setHours(9, 0, 0, 0);

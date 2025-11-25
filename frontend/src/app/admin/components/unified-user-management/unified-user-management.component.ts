@@ -25,7 +25,7 @@ export interface UserCreate {
   is_superuser?: boolean;
   role: 'patient' | 'doctor' | 'admin';
   // Patient specific fields
-  date_of_birth?: string;
+
   medical_record_number?: string;
   emergency_contact?: string;
   // Doctor specific fields
@@ -46,7 +46,7 @@ export interface UserUpdate {
   full_name?: string;
   role?: 'patient' | 'doctor' | 'admin';
   // Patient specific fields
-  date_of_birth?: string;
+
   medical_record_number?: string;
   emergency_contact?: string;
   // Doctor specific fields
@@ -65,8 +65,8 @@ type UserRoleFilter = 'all' | 'patient' | 'doctor' | 'admin';
   selector: 'app-unified-user-management',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
+    CommonModule,
+    FormsModule,
     PaginationComponent,
     MatFormFieldModule,
     MatInputModule,
@@ -83,21 +83,21 @@ export class UnifiedUserManagementComponent implements OnInit {
   offices: Office[] = [];
   loading = false;
   error: string | null = null;
-  
+
   // Pagination state
   pagination: PaginationParams = { ...defaultPaginationParams };
   totalUsers = 0;
   totalPages = 1;
-  
+
   // Filter state
   roleFilter: UserRoleFilter = 'all';
   searchQuery = '';
-  
+
   // Form state
   showCreateForm = false;
   editingUser: (UserDto | DoctorDto | PatientDto) | null = null;
   selectedRole: 'patient' | 'doctor' | 'admin' = 'patient';
-  
+
   // Form data
   formData: UserCreate = {
     email: '',
@@ -115,7 +115,7 @@ export class UnifiedUserManagementComponent implements OnInit {
     private officeService: OfficeService,
     private toastService: ToastService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadUsers();
@@ -126,7 +126,7 @@ export class UnifiedUserManagementComponent implements OnInit {
     this.loading = true;
     this.error = null;
     this.cdr.markForCheck();
-    
+
     forkJoin({
       usersResponse: this.userService.getUsersPaginated(this.pagination),
       doctorsResponse: this.doctorService.getDoctorsPaginated(this.pagination),
@@ -172,10 +172,10 @@ export class UnifiedUserManagementComponent implements OnInit {
           this.users = Array.from(dedupedUsersMap.values()).sort(
             (a, b) => a.full_name?.localeCompare(b.full_name || '') || a.email.localeCompare(b.email)
           );
-          
+
           this.totalUsers = this.users.length;
           this.totalPages = Math.max(1, Math.ceil(this.totalUsers / this.pagination.size));
-          
+
           this.applyFilters();
         },
         error: (err) => {
@@ -209,20 +209,20 @@ export class UnifiedUserManagementComponent implements OnInit {
       if (this.roleFilter !== 'all' && user.role !== this.roleFilter) {
         return false;
       }
-      
+
       // Apply search filter
       if (this.searchQuery.trim()) {
         const query = this.searchQuery.toLowerCase();
         const matchesEmail = user.email.toLowerCase().includes(query);
         const matchesName = user.full_name?.toLowerCase().includes(query);
-        const matchesSpecialty = user.role === 'doctor' && 'specialty' in user && 
+        const matchesSpecialty = user.role === 'doctor' && 'specialty' in user &&
           user.specialty?.toLowerCase().includes(query);
-        const matchesLicense = user.role === 'doctor' && 'license_number' in user && 
+        const matchesLicense = user.role === 'doctor' && 'license_number' in user &&
           user.license_number?.toLowerCase().includes(query);
-        
+
         return matchesEmail || matchesName || matchesSpecialty || matchesLicense;
       }
-      
+
       return true;
     });
   }
@@ -266,7 +266,7 @@ export class UnifiedUserManagementComponent implements OnInit {
     this.editingUser = user;
     this.selectedRole = user.role as 'patient' | 'doctor' | 'admin';
     this.resetForm();
-    
+
     // Populate form with user data
     this.formData = {
       email: user.email,
@@ -279,7 +279,7 @@ export class UnifiedUserManagementComponent implements OnInit {
 
     // Add role-specific fields
     if (user.role === 'patient' && 'date_of_birth' in user) {
-      this.formData.date_of_birth = user.date_of_birth || '';
+
       this.formData.medical_record_number = user.medical_record_number || '';
       this.formData.emergency_contact = user.emergency_contact || '';
     } else if (user.role === 'doctor' && 'specialty' in user) {
@@ -389,7 +389,7 @@ export class UnifiedUserManagementComponent implements OnInit {
 
     // Add role-specific fields
     if (this.formData.role === 'patient') {
-      updateData.date_of_birth = this.formData.date_of_birth || undefined;
+
       updateData.medical_record_number = this.formData.medical_record_number || undefined;
       updateData.emergency_contact = this.formData.emergency_contact || undefined;
     } else if (this.formData.role === 'doctor') {

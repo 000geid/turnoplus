@@ -88,9 +88,11 @@ export class DoctorShellComponent {
   readonly mobileSidebarOpen = signal<boolean>(false);
 
   readonly sortedAppointments = computed(() =>
-    [...this.appointments()].sort(
-      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
-    )
+    [...this.appointments()]
+      .filter((apt) => apt.status !== 'canceled')
+      .sort(
+        (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+      )
   );
 
   readonly doctorName = computed(() => this.doctorGreeting());
@@ -139,7 +141,7 @@ export class DoctorShellComponent {
   readonly greetingMessage = computed(() => {
     const hour = new Date().getHours();
     const name = this.doctorName();
-    
+
     if (hour < 12) return `Buenos días, Dr. ${name}`;
     if (hour < 18) return `Buenas tardes, Dr. ${name}`;
     return `Buenas noches, Dr. ${name}`;
@@ -170,11 +172,11 @@ export class DoctorShellComponent {
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - dayOfWeek);
     startOfWeek.setHours(0, 0, 0, 0);
-    
+
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
-    
+
     return this.sortedAppointments().filter(apt => {
       const aptDate = new Date(apt.startAt);
       return aptDate >= startOfWeek && aptDate <= endOfWeek;
@@ -207,13 +209,13 @@ export class DoctorShellComponent {
     const futureAvailability = this.availability().filter(avail =>
       new Date(avail.startAt) > now
     );
-    
+
     if (futureAvailability.length === 0) return null;
-    
+
     futureAvailability.sort((a, b) =>
       new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
     );
-    
+
     return futureAvailability[0];
   });
 
@@ -329,7 +331,7 @@ export class DoctorShellComponent {
         error: (error) => {
           this.isCreatingAvailability.set(false);
           let errorMessage = 'No pudimos agregar la disponibilidad. Reintentá más tarde.';
-          
+
           if (error.error?.detail) {
             const detail = error.error.detail;
             if (detail.includes('Overlapping availability slot')) {
@@ -344,7 +346,7 @@ export class DoctorShellComponent {
               errorMessage = detail;
             }
           }
-          
+
           this.toastService.error(errorMessage);
         }
       });

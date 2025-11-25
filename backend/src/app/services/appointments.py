@@ -324,6 +324,80 @@ class AppointmentsService:
         self._session.flush()
         return self._availability_to_schema(availability)
 
+    def delete_block(self, block_id: int) -> bool:
+        """
+        Delete a specific appointment block.
+        If the block is in the middle of an availability, split the availability into two.
+        """
+        block = self._session.get(AppointmentBlockModel, block_id)
+        if not block:
+            raise NotFoundError("Appointment block not found")
+
+        if block.is_booked:
+            raise ValidationError("Cannot delete a booked block")
+
+        availability = block.availability
+        
+        # Sort blocks by start time to determine position
+        sorted_blocks = sorted(availability.blocks, key=lambda b: b.start_at)
+        block_index = next((i for i, b in enumerate(sorted_blocks) if b.id == block.id), -1)
+        
+        if block_index == -1:
+            # Should not happen given relationship
+            raise NotFoundError("Block not found in availability")
+
+        is_first = block_index == 0
+        is_last = block_index == len(sorted_blocks) - 1
+
+        # Case 1: Only one block in availability -> delete availability
+        if len(sorted_blocks) == 1:
+            self._session.delete(availability) # Cascades to block
+            self._session.flush()
+            return True
+
+        # Case 2: Block is at the start -> shrink availability from start
+        if is_first:
+            next_block = sorted_blocks[1]
+            availability.start_at = next_block.start_at
+            self._session.delete(block)
+            self._session.flush()
+            return True
+
+        # Case 3: Block is at the end -> shrink availability from end
+        if is_last:
+            prev_block = sorted_blocks[-2]
+            availability.end_at = prev_block.end_at
+            self._session.delete(block)
+            self._session.flush()
+            return True
+
+        # Case 4: Block is in the middle -> split availability
+        # Original availability ends at the end of the previous block
+        prev_block = sorted_blocks[block_index - 1]
+        original_end = availability.end_at
+        availability.end_at = prev_block.end_at
+        
+        # New availability starts at the start of the next block
+        next_block = sorted_blocks[block_index + 1]
+        
+        new_availability = AvailabilityModel(
+            doctor_id=availability.doctor_id,
+            start_at=next_block.start_at,
+            end_at=original_end,
+        )
+        self._session.add(new_availability)
+        self._session.flush() # Get ID for new availability
+        
+        # Move subsequent blocks to new availability
+        for subsequent_block in sorted_blocks[block_index + 1:]:
+            subsequent_block.availability_id = new_availability.id
+            
+        # Delete the target block
+        self._session.delete(block)
+        self._session.flush()
+        
+        return True
+
     # --------- Internal helpers ---------
     def _validate_datetime_range(self, start: datetime, end: datetime) -> None:
         """Validate that start time is before end time and both are in the future."""

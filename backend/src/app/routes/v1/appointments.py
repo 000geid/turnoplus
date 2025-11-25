@@ -10,6 +10,7 @@ from app.controllers.appointments import (
     confirm_appointment,
     create_availability,
     delete_availability,
+    delete_appointment_block,
     delete_unbooked_blocks,
     list_availability,
     list_doctor_appointments,
@@ -110,3 +111,9 @@ def route_delete_unbooked_blocks(availability_id: int):
         raise
     except Exception as exc:  # pragma: no cover - defensive
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.delete("/blocks/{block_id}", status_code=204)
+def route_delete_appointment_block(block_id: int):
+    """Delete a specific appointment block."""
+    delete_appointment_block(block_id)
