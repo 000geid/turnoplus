@@ -22,6 +22,8 @@ class Patient(User):
     date_of_birth: Optional[date] = None
     medical_record_number: Optional[str] = None
     emergency_contact: Optional[str] = None
+    obra_social_name: Optional[str] = None
+    obra_social_number: Optional[str] = None
 
 
 class Doctor(User):
@@ -52,6 +54,8 @@ class PatientCreate(UserCreate):
     date_of_birth: Optional[date] = None
     medical_record_number: Optional[str] = None
     emergency_contact: Optional[str] = None
+    obra_social_name: Optional[str] = None
+    obra_social_number: Optional[str] = None
 
 
 class DoctorCreate(UserCreate):
@@ -82,6 +86,8 @@ class PatientUpdate(UserUpdate):
     date_of_birth: Optional[date] = None
     medical_record_number: Optional[str] = None
     emergency_contact: Optional[str] = None
+    obra_social_name: Optional[str] = None
+    obra_social_number: Optional[str] = None
 
 
 class DoctorUpdate(UserUpdate):

@@ -173,4 +173,6 @@ class PatientsService:
             date_of_birth=model.date_of_birth,
             medical_record_number=model.medical_record_number,
             emergency_contact=model.emergency_contact,
+            obra_social_name=model.obra_social_name,
+            obra_social_number=model.obra_social_number,
         )

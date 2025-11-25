@@ -132,7 +132,7 @@ def create_sample_accounts():
                 admin_profile = Admin(
                     id=admin_user_id,
                     office_id=office_id,
-                    role="System Administrator",
+                    role="superadmin",
                     permissions=["user_management", "office_management", "system_settings"]
                 )
                 session.add(admin_profile)
@@ -174,7 +174,7 @@ def create_sample_accounts():
             print("Email: admin@example.com")
             print("Password: admin123")
             print("Full Name: Admin User")
-            print("Role: System Administrator")
+            print("Role: superadmin")
             print("Permissions: user_management, office_management, system_settings")
             print(f"Office ID: {office_id}")
             
@@ -215,7 +215,7 @@ def create_sample_accounts():
                 f.write("Email: admin@example.com\n")
                 f.write("Password: admin123\n")
                 f.write("Full Name: Admin User\n")
-                f.write("Role: System Administrator\n")
+                f.write("Role: superadmin\n")
                 f.write("Permissions: user_management, office_management, system_settings\n")
                 f.write(f"Office ID: {office_id}\n")
             

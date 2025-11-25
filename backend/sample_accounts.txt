@@ -6,7 +6,7 @@ Office Code: MAIN
 Office Name: Main Medical Center
 
 --- PATIENT ACCOUNT ---
-User ID: 5
+User ID: 1
 Email: patient@example.com
 Password: patient123
 Full Name: John Patient
@@ -15,7 +15,7 @@ Date of Birth: 1985-05-15
 Emergency Contact: Jane Patient (555-0101)
 
 --- DOCTOR ACCOUNT ---
-User ID: 3
+User ID: 2
 Email: doctor@example.com
 Password: doctor123
 Full Name: Dr. Sarah Doctor
@@ -26,10 +26,10 @@ Years of Experience: 10
 Office ID: 1
 
 --- ADMIN ACCOUNT ---
-User ID: 4
+User ID: 3
 Email: admin@example.com
 Password: admin123
 Full Name: Admin User
-Role: System Administrator
+Role: superadmin
 Permissions: user_management, office_management, system_settings
 Office ID: 1

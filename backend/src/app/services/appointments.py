@@ -183,11 +183,33 @@ class AppointmentsService:
         return self._to_schema(appointment)
 
     def cancel(self, appointment_id: int) -> Appointment:
+        """Cancel an appointment and free its associated availability block."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         appointment = self._get_appointment_or_raise(appointment_id)
+        
+        # Idempotent: if already cancelled, just return
         if appointment.status == AppointmentStatus.CANCELED:
+            logger.info(f"Appointment {appointment_id} already cancelled")
             return self._to_schema(appointment)
+        
+        # Free the associated block if it exists
+        if appointment.block_id:
+            block = self._session.get(AppointmentBlockModel, appointment.block_id)
+            if block and block.is_booked:
+                block.is_booked = False
+                logger.info(f"Freed block {block.id} for cancelled appointment {appointment_id}")
+            else:
+                logger.warning(f"Block {appointment.block_id} not found or already free for appointment {appointment_id}")
+        else:
+            logger.info(f"Appointment {appointment_id} has no associated block to free")
+        
+        # Mark appointment as cancelled
         appointment.status = AppointmentStatus.CANCELED
         self._session.flush()
+        
+        logger.info(f"Cancelled appointment {appointment_id}")
         return self._to_schema(appointment)
 
     def confirm(self, appointment_id: int) -> Appointment:

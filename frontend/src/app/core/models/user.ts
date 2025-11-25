@@ -21,6 +21,8 @@ export interface PatientDto extends BaseUserDto {
   date_of_birth?: string | null;
   medical_record_number?: string | null;
   emergency_contact?: string | null;
+  obra_social_name?: string | null;
+  obra_social_number?: string | null;
 }
 
 export interface DoctorDto extends BaseUserDto {
@@ -57,4 +59,6 @@ export interface PatientUpdateRequest {
   date_of_birth?: string | null;
   medical_record_number?: string | null;
   emergency_contact?: string | null;
+  obra_social_name?: string | null;
+  obra_social_number?: string | null;
 }
