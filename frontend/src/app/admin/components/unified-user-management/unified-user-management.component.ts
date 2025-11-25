@@ -146,19 +146,35 @@ export class UnifiedUserManagementComponent implements OnInit {
             ...(doctorsResponse?.items || []),
             ...(patientsResponse?.items || [])
           ];
-          
-          this.users = allUsers.sort((a, b) => 
-            a.full_name?.localeCompare(b.full_name || '') || 
-            a.email.localeCompare(b.email)
+
+          // Deduplicate by email, preferring role-specific payloads over generic user entries
+          const dedupedUsersMap = new Map<string, UserDto | DoctorDto | PatientDto>();
+          for (const user of allUsers) {
+            const emailKey = user.email.toLowerCase();
+            const existing = dedupedUsersMap.get(emailKey);
+            if (!existing) {
+              dedupedUsersMap.set(emailKey, user);
+              continue;
+            }
+
+            const existingIsGeneric = existing.role === 'admin' || existing.role === 'user';
+            const incomingIsSpecific = user.role === 'doctor' || user.role === 'patient';
+            const bothSpecificSameRole = incomingIsSpecific && (existing.role === user.role);
+            const incomingHasMoreDetails =
+              bothSpecificSameRole &&
+              Object.keys(user).length > Object.keys(existing).length;
+
+            if ((incomingIsSpecific && existingIsGeneric) || incomingHasMoreDetails) {
+              dedupedUsersMap.set(emailKey, user);
+            }
+          }
+
+          this.users = Array.from(dedupedUsersMap.values()).sort(
+            (a, b) => a.full_name?.localeCompare(b.full_name || '') || a.email.localeCompare(b.email)
           );
           
-          const totalFromResponses = [
-            usersResponse?.total || 0,
-            doctorsResponse?.total || 0,
-            patientsResponse?.total || 0
-          ];
-          this.totalUsers = totalFromResponses.reduce((a, b) => a + b, 0);
-          this.totalPages = Math.ceil(this.totalUsers / this.pagination.size);
+          this.totalUsers = this.users.length;
+          this.totalPages = Math.max(1, Math.ceil(this.totalUsers / this.pagination.size));
           
           this.applyFilters();
         },
