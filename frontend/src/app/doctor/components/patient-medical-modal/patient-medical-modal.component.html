@@ -46,14 +46,14 @@
                     <div class="timeline-card__meta">
                       <div>
                         <p class="meta-date">
-                          {{ record.created_at | date: "EEEE d 'de' MMMM':'':'es-ES" }}
+                          {{ record.created_at | date: "EEEE d 'de' MMMM": undefined : 'es-ES' }}
                         </p>
                         <span class="meta-time">
                           {{ record.created_at | date: 'HH:mm':undefined:'es-ES' }}
                         </span>
                       </div>
                       <span class="meta-chip">
-                        Dr. #{{ record.doctor_id }}
+                        Dr. {{ record.doctor_name || ('#' + record.doctor_id) }}
                       </span>
                     </div>
 

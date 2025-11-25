@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import select
@@ -252,6 +252,56 @@ class AppointmentsService:
         self._session.flush()
         return self._availability_to_schema(availability)
 
+    def delete_availability(self, availability_id: int) -> bool:
+        """Remove an availability only if it has never been booked."""
+        availability = self._session.get(AvailabilityModel, availability_id)
+        if not availability:
+            raise NotFoundError("Availability not found")
+
+        has_bookings = self._session.scalars(
+            select(AppointmentModel.id)
+            .where(AppointmentModel.availability_id == availability_id)
+            .limit(1)
+        ).first()
+
+        if has_bookings:
+            raise ValidationError("Cannot delete availability that has existing appointments")
+
+        self._session.delete(availability)
+        self._session.flush()
+        return True
+
+    def delete_unbooked_blocks(self, availability_id: int) -> Optional[Availability]:
+        """Remove only unbooked blocks. If none remain, delete availability and return None."""
+        availability = self._session.get(AvailabilityModel, availability_id)
+        if not availability:
+            raise NotFoundError("Availability not found")
+
+        # Partition blocks
+        booked_blocks = [block for block in availability.blocks if block.is_booked]
+        unbooked_blocks = [block for block in availability.blocks if not block.is_booked]
+
+        # Nothing to delete
+        if not unbooked_blocks:
+            return self._availability_to_schema(availability)
+
+        # Remove unbooked blocks
+        for block in unbooked_blocks:
+            self._session.delete(block)
+
+        # If no blocks remain, remove availability
+        if not booked_blocks:
+            self._session.delete(availability)
+            self._session.flush()
+            return None
+
+        # Adjust availability window to booked blocks only
+        availability.start_at = min(block.start_at for block in booked_blocks)
+        availability.end_at = max(block.end_at for block in booked_blocks)
+
+        self._session.flush()
+        return self._availability_to_schema(availability)
+
     # --------- Internal helpers ---------
     def _validate_datetime_range(self, start: datetime, end: datetime) -> None:
         """Validate that start time is before end time and both are in the future."""
@@ -346,8 +396,8 @@ class AppointmentsService:
             id=model.id,
             doctor_id=model.doctor_id,
             patient_id=model.patient_id,
-            start_at=model.start_at,
-            end_at=model.end_at,
+            start_at=AppointmentsService._normalize_datetime(model.start_at),
+            end_at=AppointmentsService._normalize_datetime(model.end_at),
             notes=model.notes,
             status=model.status,
         )
@@ -358,32 +408,28 @@ class AppointmentsService:
         return Availability(
             id=model.id,
             doctor_id=model.doctor_id,
-            start_at=model.start_at,
-            end_at=model.end_at,
+            start_at=AppointmentsService._normalize_datetime(model.start_at),
+            end_at=AppointmentsService._normalize_datetime(model.end_at),
             blocks=blocks,
         )
 
     @staticmethod
     def _block_to_schema(model: AppointmentBlockModel) -> AppointmentBlock:
-        # Ensure timezone-aware datetimes
-        start_at = model.start_at
-        end_at = model.end_at
-        
-        if start_at.tzinfo is None:
-            from datetime import timezone
-            start_at = start_at.replace(tzinfo=timezone.utc)
-        if end_at.tzinfo is None:
-            from datetime import timezone
-            end_at = end_at.replace(tzinfo=timezone.utc)
-            
         return AppointmentBlock(
             id=model.id,
             availability_id=model.availability_id,
             block_number=model.block_number,
-            start_at=start_at,
-            end_at=end_at,
+            start_at=AppointmentsService._normalize_datetime(model.start_at),
+            end_at=AppointmentsService._normalize_datetime(model.end_at),
             is_booked=model.is_booked,
         )
+
+    @staticmethod
+    def _normalize_datetime(value: datetime) -> datetime:
+        """Ensure we always return timezone-aware datetimes (UTC if missing)."""
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
 
     def _validate_block_alignment(self, start: datetime, end: datetime, block_duration: int) -> None:
         """Validate that start and end times align with block boundaries."""
@@ -415,6 +461,8 @@ class AppointmentsService:
                 end_at=block_end,
                 is_booked=False,
             )
+            # Keep relationship in-memory so the response includes blocks without reloading
+            availability.blocks.append(block)
             self._session.add(block)
             
             current_time = block_end

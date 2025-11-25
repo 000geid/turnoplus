@@ -22,14 +22,17 @@ export class RegisterPage {
   private readonly router = inject(Router);
 
   readonly form = this.fb.group({
-    full_name: ['', Validators.required],
+    full_name: [
+      '',
+      [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü][A-Za-zÁÉÍÓÚáéíóúÑñÜü\s'-]{1,}$/)]
+    ],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required]],
     document_type: ['dni', Validators.required],
     document_number: ['', [Validators.required, Validators.pattern(/^[0-9]{7,10}$/)]],
     address: ['', Validators.required],
-    phone: ['', Validators.required]
+    phone: ['', [Validators.required, Validators.pattern(/^[0-9+()\s-]{8,20}$/)]]
   });
 
   isSubmitting = false;

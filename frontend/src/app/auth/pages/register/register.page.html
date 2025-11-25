@@ -8,8 +8,10 @@
     <label class="field">
       <span>Nombre completo</span>
       <input formControlName="full_name" class="input" placeholder="Nombre y apellido" />
-      @if (form.controls.full_name.touched && form.controls.full_name.invalid) {
+      @if (form.controls.full_name.touched && form.controls.full_name.hasError('required')) {
         <small class="field__error">Indicá tu nombre y apellido.</small>
+      } @else if (form.controls.full_name.touched && form.controls.full_name.hasError('pattern')) {
+        <small class="field__error">Usá solo letras y espacios.</small>
       }
     </label>
 
@@ -73,9 +75,18 @@
 
     <label class="field">
       <span>Teléfono</span>
-      <input formControlName="phone" class="input" placeholder="Ej: +54 9 11 5555-0000" />
-      @if (form.controls.phone.touched && form.controls.phone.invalid) {
+      <input
+        type="tel"
+        inputmode="tel"
+        autocomplete="tel"
+        formControlName="phone"
+        class="input"
+        placeholder="Ej: +54 9 11 5555-0000"
+      />
+      @if (form.controls.phone.touched && form.controls.phone.hasError('required')) {
         <small class="field__error">Ingresá un teléfono de contacto.</small>
+      } @else if (form.controls.phone.touched && form.controls.phone.hasError('pattern')) {
+        <small class="field__error">Ingresá solo números y símbolos válidos (+ - () ).</small>
       }
     </label>
 
