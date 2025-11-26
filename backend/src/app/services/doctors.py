@@ -66,7 +66,7 @@ class DoctorsService:
     def create(self, data: DoctorCreate) -> Doctor:
         payload = data.model_dump()
         password = payload.pop("password")
-        office_id = payload.pop("office_id", None)
+        office_id = payload.get("office_id")  # Get but don't pop, so it stays in payload
 
         # Validate office exists if provided
         if office_id is not None:
@@ -83,7 +83,7 @@ class DoctorsService:
             full_name=payload.pop("full_name", None),
             role=UserRole.DOCTOR,
         )
-        doctor = DoctorModel(**payload)
+        doctor = DoctorModel(**payload)  # office_id is still in payload
         user.doctor_profile = doctor
 
         with self._session_scope() as session:
@@ -134,32 +134,44 @@ class DoctorsService:
 
             user = doctor.user
             
+            # Check if any appointments exist for this doctor
+            stmt = select(AppointmentModel).where(AppointmentModel.doctor_id == doctor_id)
+            appointments = session.scalars(stmt).all()
+            
+            if appointments:
+                patient_names = []
+                for appointment in appointments[:3]:  # Show first 3 appointments
+                    if appointment.patient and appointment.patient.user:
+                        patient_names.append(appointment.patient.user.full_name or appointment.patient.user.email)
+                
+                names_str = ', '.join(patient_names)
+                more_str = f" y {len(appointments) - 3} más" if len(appointments) > 3 else ""
+                
+                raise ValueError(
+                    f"No se puede eliminar al doctor '{doctor.user.full_name or doctor.user.email}' porque tiene "
+                    f"{len(appointments)} turno(s) con pacientes: {names_str}{more_str}. "
+                    f"Por favor cancelá todos los turnos primero."
+                )
+            
             # Import models locally to avoid circular imports
             from app.models.appointment_block import AppointmentBlock
             
-            # Delete dependent records in the correct order to avoid constraint violations
-            # 1. Delete appointments that reference this doctor
-            stmt = select(AppointmentModel).where(AppointmentModel.doctor_id == doctor_id)
-            appointments = session.scalars(stmt).all()
-            for appointment in appointments:
-                session.delete(appointment)
-            
-            # 2. Delete appointment_blocks that are linked to availabilities for this doctor
+            # Delete appointment_blocks that are linked to availabilities for this doctor
             stmt = select(AppointmentBlock).join(Availability).where(Availability.doctor_id == doctor_id)
             appointment_blocks = session.scalars(stmt).all()
             for block in appointment_blocks:
                 session.delete(block)
             
-            # 3. Delete availabilities that reference this doctor
+            # Delete availabilities that reference this doctor
             stmt = select(Availability).where(Availability.doctor_id == doctor_id)
             availabilities = session.scalars(stmt).all()
             for availability in availabilities:
                 session.delete(availability)
             
-            # 4. Delete doctor record
+            # Delete doctor record
             session.delete(doctor)
             
-            # 5. Delete user record last
+            # Delete user record last
             if user:
                 session.delete(user)
                 

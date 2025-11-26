@@ -85,9 +85,12 @@ def route_get_doctor_patients_paginated(
 
 @router.delete("/{doctor_id}", status_code=204)
 def route_delete_doctor(doctor_id: int):
-    ok = delete_doctor(doctor_id)
-    if not ok:
-        raise HTTPException(status_code=404, detail="Doctor not found")
+    try:
+        ok = delete_doctor(doctor_id)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{doctor_id}/availability")

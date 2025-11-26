@@ -32,6 +32,7 @@ def update_office(office_id: int, data: OfficeUpdate) -> Office | None:
 
 
 def delete_office(office_id: int) -> bool:
+    """Delete an office. Raises ValueError if office has assigned doctors."""
     broker = get_dbbroker()
     with broker.session() as session:
         svc = OfficesService(session)

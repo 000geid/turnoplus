@@ -41,6 +41,7 @@ def update_doctor(doctor_id: int, data: DoctorUpdate) -> Doctor | None:
 
 
 def delete_doctor(doctor_id: int) -> bool:
+    """Delete a doctor. Raises ValueError if doctor has appointments."""
     broker = get_dbbroker()
     with broker.session() as session:
         svc = DoctorsService(session)

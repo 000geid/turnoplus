@@ -75,6 +75,24 @@ class OfficesService:
             if not office:
                 return False
 
+            # Check if any doctors are assigned to this office
+            from app.models.doctor import Doctor as DoctorModel
+            from sqlalchemy.orm import joinedload
+            
+            stmt = (
+                select(DoctorModel)
+                .options(joinedload(DoctorModel.user))
+                .where(DoctorModel.office_id == office_id)
+            )
+            assigned_doctors = session.scalars(stmt).unique().all()
+            
+            if assigned_doctors:
+                doctor_names = ', '.join([d.user.full_name or d.user.email for d in assigned_doctors if d.user])
+                raise ValueError(
+                    f"No se puede eliminar el consultorio '{office.name or office.code}' porque tiene {len(assigned_doctors)} "
+                    f"doctor(es) asignado(s): {doctor_names}. Por favor reasigná o eliminá los doctores primero."
+                )
+
             session.delete(office)
             session.flush()
             return True

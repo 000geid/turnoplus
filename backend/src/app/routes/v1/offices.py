@@ -41,6 +41,9 @@ def route_update_office(office_id: int, data: OfficeUpdate):
 
 @router.delete("/{office_id}", status_code=204)
 def route_delete_office(office_id: int):
-    ok = delete_office(office_id)
-    if not ok:
-        raise HTTPException(status_code=404, detail="Office not found")
+    try:
+        ok = delete_office(office_id)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Office not found")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
