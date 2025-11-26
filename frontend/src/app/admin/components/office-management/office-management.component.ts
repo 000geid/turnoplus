@@ -20,11 +20,11 @@ export class OfficeManagementComponent implements OnInit {
   offices: Office[] = [];
   loading = false;
   error: string | null = null;
-  
+
   // Form state
   showCreateForm = false;
   editingOffice: Office | null = null;
-  
+
   // Form data
   formData: OfficeCreate = {
     code: '',
@@ -36,7 +36,7 @@ export class OfficeManagementComponent implements OnInit {
     private officeService: OfficeService,
     private toastService: ToastService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadOffices();
@@ -46,7 +46,7 @@ export class OfficeManagementComponent implements OnInit {
     this.loading = true;
     this.error = null;
     this.cdr.markForCheck();
-    
+
     this.officeService
       .getOffices()
       .pipe(
@@ -162,7 +162,18 @@ export class OfficeManagementComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        const errorMessage = 'Error al eliminar consultorio. Reintentá más tarde.';
+
+        // Check if the error contains a specific validation message
+        let errorMessage = 'Error al eliminar consultorio. Reintentá más tarde.';
+
+        if (err?.error?.detail) {
+          // Backend returned a detailed error message
+          errorMessage = err.error.detail;
+        } else if (err?.message) {
+          // Try to extract message from error object
+          errorMessage = err.message;
+        }
+
         this.error = errorMessage;
         this.toastService.error(errorMessage);
         console.error('Error deleting office:', err);

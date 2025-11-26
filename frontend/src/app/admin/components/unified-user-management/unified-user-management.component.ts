@@ -472,7 +472,18 @@ export class UnifiedUserManagementComponent implements OnInit {
       },
       error: (err: any) => {
         this.loading = false;
-        const errorMessage = `Error al eliminar ${this.getRoleDisplayName(user.role)}. Reintentá más tarde.`;
+
+        // Check if the error contains a specific validation message
+        let errorMessage = `Error al eliminar ${this.getRoleDisplayName(user.role)}. Reintentá más tarde.`;
+
+        if (err?.error?.detail) {
+          // Backend returned a detailed error message
+          errorMessage = err.error.detail;
+        } else if (err?.message) {
+          // Try to extract message from error object
+          errorMessage = err.message;
+        }
+
         this.error = errorMessage;
         this.toastService.error(errorMessage);
         console.error('Error deleting user:', err);
